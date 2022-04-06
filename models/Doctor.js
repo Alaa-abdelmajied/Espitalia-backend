@@ -17,9 +17,19 @@ const doctorSchema = new mongoose.Schema({
         type:String,
         required:[true,'name is required']
     },
+    userName:{
+        type:String,
+        required:[true,'userName is required']
+    },
     specialization:{
         type:String,
         required:[true,'specialization is required']
+    },
+    rating:{
+        type:Number,
+    },
+    reviews:{
+        type:[String]
     },
     email: {
         type: String,
