@@ -19,12 +19,8 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please enter a name'],
     },
-    age: {
-        type: Number,
-        required: [true, 'Please enter an age'],
-    },
     phoneNumber: {
-        type: Number,
+        type: String,
         required: [true, 'Please enter a phone number'],
     },
     dateOfBirth: {
@@ -56,7 +52,7 @@ patientSchema.pre('save', async function (next) {
     next();
 });
 
-patientSchema.statics.login = async function (email, password) {
+patientSchema.statics.patientLogin = async function (email, password) {
     const patient = await this.findOne({ email });
     if (patient) {
         const validPassword = await bcrypt.compare(password, patient.password);
