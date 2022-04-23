@@ -41,7 +41,10 @@ const patientSchema = new mongoose.Schema({
     questions: {
         type: Boolean
     },
-    appointments:{
+    oldAppointments:{
+        type: [mongoose.Types.ObjectId]
+    },
+    newAppointments:{
         type: [mongoose.Types.ObjectId]
     },
     verified: {
