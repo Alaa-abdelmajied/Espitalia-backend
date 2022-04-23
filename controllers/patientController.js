@@ -5,11 +5,11 @@ const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
 const jwt = require('jsonwebtoken');
 
-const maxAge = 3 * 24 * 60 * 60;
+// const maxAge = 3 * 24 * 60 * 60;
 const createToken = (id) => {
-    return jwt.sign({ id }, 'Grad_Proj.Espitalia#SecRet.Application@30132825275', {
+    return jwt.sign({ id }, 'Grad_Proj.Espitalia#SecRet.Application@30132825275'/*, {
         expiresIn: maxAge
-    });
+    }*/);
 };
 
 const transporter = nodemailer.createTransport({
@@ -19,6 +19,21 @@ const transporter = nodemailer.createTransport({
         pass: 'Espitalia@app.com'
     }
 });
+
+const checkToken = (token) => {
+    //check if token is valid and refresh it if its about to expire
+    // do i need to refresh it ?
+
+}
+
+// module.exports.test = async (req, res) => {
+//     const { token } = req.body;
+//     const { id, iat, exp } = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+//     res.send('id is:' + id + " " + iat + " " + exp);
+//     // const d = new Date;
+//     // let time = d.getTime();
+//     // res.send('time is ' + time + " " + exp*1000);
+// }
 
 module.exports.patientSignup = async (req, res) => {
     const { email, password, name, phoneNumber,
@@ -79,10 +94,26 @@ module.exports.verifyAccount = async (req, res) => {
                 verified: true
             });
             await WaitingVerfication.deleteOne(decodedToken);
-            res.status(200).send();
+            res.status(200).send('Verified');
         } else {
             res.status(400).send('Wrong Otp');
         }
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
+
+module.exports.patientChangePassword = async (req, res) => {
+    const { oldPassword, newPassword, token } = req.body;
+    try {
+        const decodedToken = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+        const patient = await Patient.findOne(decodedToken);
+        const result = await Patient.changePassword(patient.email, oldP, newPassword);
+        // const hashedPassword = await Patient.hashPassword(newPassword);
+        // await Patient.updateOne(patient, {
+        //     password: hashedPassword
+        // });
+        res.status(200).send(result);
     } catch (err) {
         res.status(400).send(err.message);
     }

@@ -7,5 +7,6 @@ const router = Router();
 router.post('/signup', patientController.patientSignup);
 router.post('/login', patientController.patientLogin);
 router.post('/verify', patientController.verifyAccount);
+router.post('/changePassword', patientController.patientChangePassword);
 
 module.exports = router;
