@@ -3,8 +3,8 @@ const validator = require('validator');
 const CryptoJS = require('crypto-js');
 
 mongoose.connect('mongodb://localhost/EspitaliaDB')
-.then(() => console.log('Connected.'))
-.catch(err => console.log('Error:',err));
+    .then(() => console.log('Connected.'))
+    .catch(err => console.log('Error:', err));
 
 const hospitalSchema = new mongoose.Schema({
     Email: {
@@ -18,12 +18,18 @@ const hospitalSchema = new mongoose.Schema({
         minlength: 3,
         maxlength: 50,
     },
-    Address: [ {
+    Address: {
         type: String,
         required: true,
         minlength: 3,
         maxlength: 50,
-    } ],
+    },
+
+    Specialization: [{
+        type: String,
+        required: true,
+    }],
+
     salt: {
         type: String,
         require: true,
@@ -36,12 +42,12 @@ const hospitalSchema = new mongoose.Schema({
 
 const Hospital = mongoose.model('Hospital', hospitalSchema);
 
-async function addHospital(hospital){
+async function addHospital(hospital) {
     const _hospital = new Hospital({
         Email: hospital.email,
         Name: hospital.name,
         Address: hospital.address,
-        salt:hospital.salt,
+        salt: hospital.salt,
         password_Hash: hospital.password,
     });
 
@@ -64,10 +70,10 @@ const newHospital = {
 
 //Server Side adding data
 
-const salt = CryptoJS.lib.WordArray.random(128/8).toString();
+const salt = CryptoJS.lib.WordArray.random(128 / 8).toString();
 var hashDigest = CryptoJS.PBKDF2(newHospital.password, salt, {
     keySize: 256 / 32
-  }).toString();
+}).toString();
 
 const hospital_data = {
     email: newHospital.email,
