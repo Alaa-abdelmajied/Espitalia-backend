@@ -79,3 +79,26 @@ module.exports.patientGeneralSerach = async(req,res) =>{
         res.status(400).send(err.message);
     }
 }
+
+//function when pressed on specefic hospital it will return its Specialization
+module.exports.pressOnHospital = async(req,res) =>{
+    const {id} = req.body;
+    try{
+        res.send((await Hospital.find({_id:id}))[0].Specialization);
+
+    }catch{
+        res.status(400).send(err.message);
+    }
+}
+
+//return doctors in specefic hospital in specefic Specialization
+module.exports.pressOnHospitalThenSpecialization = async(req,res) =>{
+    const {id,search} = req.body;
+    try{
+        res.send(await Doctor.find({hospital_id:id , specialization:search}));
+
+    }catch{
+        res.status(400).send(err.message);
+    }
+
+}
