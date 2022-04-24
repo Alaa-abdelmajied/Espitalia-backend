@@ -18,6 +18,9 @@ const appointmentSchema = new mongoose.Schema({
     },
     prescription: {
         type: String
+    },
+    flowNumber:{
+        type: Number
     }
 })
 
