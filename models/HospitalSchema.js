@@ -34,7 +34,7 @@ const hospitalSchema = new mongoose.Schema({
         type: String,
         require: true,
     },
-    password_Hash: {                 //ns
+    password_Hash: {                 
         type: String,
         required: true,
     },
