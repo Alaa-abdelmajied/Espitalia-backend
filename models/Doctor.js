@@ -3,12 +3,7 @@ const { isEmail } = require('validator');
 
 //deh ma3mola embedded schema gwa doctor w gwaha hena feh el appointment list
 const scheduleSchema =new mongoose.Schema({
-    day:
-    {
-        type:String,
-        enum:['monday','tuesday','wednesday','thursday','friday','saturday','sunday'],
-        lowercase:true
-    },     
+    date:Date, 
     from:String ,
     to:String,
     AppointmentList:{
@@ -59,6 +54,12 @@ const doctorSchema = new mongoose.Schema({
     currentFlowNumber:{
         type:Number,
         default:0
-    }
-   
+    },
+    workingDays:{
+        type:[{
+            day:String,
+            to:String,
+            from:String
+        }]
+    },
 })
