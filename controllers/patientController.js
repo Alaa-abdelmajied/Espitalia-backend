@@ -10,10 +10,26 @@ module.exports.patientLogin = async (req, res) => {
     }
 }
 
-module.exports.getPatient = async(req, res) => {
-    const { name } = req.body;
-    const patient = await Patient.find({name:name}).select('name');
-    if (!patient) return res.status(404).send("No patients.");
-    res.send(patient);
+// module.exports.getPatient = async(req, res) => {
+//     const { name } = req.body;
+//     const patient = await Patient.find({name:name}).select('name');
+//     if (!patient) return res.status(404).send("No patients.");
+//     res.send(patient);
+//     console.log(patient);
+// }
+
+module.exports.getPatient=async(req,res) => {
+    //const {name} = req.body;
+    //const patient=await Patient.find();
+    const patient=await Patient.find();
     console.log(patient);
+    try{
+
+        res.send(patient);
+        // const patients= await Patient.find(id);
+
+    }
+    catch (err) {
+        res.status(400).send(err.message);
+    }
 }
