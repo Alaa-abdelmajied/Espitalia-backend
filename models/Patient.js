@@ -19,12 +19,8 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please enter a name'],
     },
-    age: {
-        type: Number,
-        required: [true, 'Please enter an age'],
-    },
     phoneNumber: {
-        type: Number,
+        type: String,
         required: [true, 'Please enter a phone number'],
     },
     dateOfBirth: {
@@ -59,7 +55,7 @@ patientSchema.pre('save', async function (next) {
     next();
 });
 
-patientSchema.statics.login = async function (email, password) {
+patientSchema.statics.patientLogin = async function (email, password) {
     const patient = await this.findOne({ email });
     if (patient) {
         const validPassword = await bcrypt.compare(password, patient.password);
@@ -71,9 +67,31 @@ patientSchema.statics.login = async function (email, password) {
     throw Error('Incorrect email or password');
 };
 
-patientSchema.statics.hashPassword = async function (password) {
+patientSchema.statics.changePassword = async function (patientId, oldPassword, newPassword) {
+    const patient = await this.findOne({ patientId });
+    const validPassword = await bcrypt.compare(oldPassword, patient.password);
+    if (validPassword) {
+        const salt = await bcrypt.genSalt();
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        await Patient.updateOne(patient, {
+            password: hashedPassword
+        });
+        return ('done');
+    }
+    throw Error('Incorrect password');
+
+    // const salt = await bcrypt.genSalt();
+    // return bcrypt.hash(newPassword, salt);
+}
+
+patientSchema.statics.forgotPassword = async function (patientId, password) {
+    const patient = await this.findOne({ patientId });
     const salt = await bcrypt.genSalt();
-    return bcrypt.hash(this.password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await Patient.updateOne(patient, {
+        password: hashedPassword
+    });
+    return ('done');
 }
 
 const Patient = mongoose.model('patient', patientSchema);
