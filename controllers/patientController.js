@@ -1,4 +1,6 @@
 const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
+const Hospital = require('../models/Hospital');
 const WaitingVerfication = require('../models/WaitingVerfication');
 
 const nodemailer = require('nodemailer');
@@ -19,21 +21,6 @@ const transporter = nodemailer.createTransport({
         pass: 'Espitalia@app.com'
     }
 });
-
-const checkToken = (token) => {
-    //check if token is valid and refresh it if its about to expire
-    // do i need to refresh it ?
-
-}
-
-// module.exports.test = async (req, res) => {
-//     const { token } = req.body;
-//     const { id, iat, exp } = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
-//     res.send('id is:' + id + " " + iat + " " + exp);
-//     // const d = new Date;
-//     // let time = d.getTime();
-//     // res.send('time is ' + time + " " + exp*1000);
-// }
 
 const sendOtp = (patientId, patientName) => {
     const otp = otpGenerator.generate(5, {
@@ -174,4 +161,95 @@ module.exports.patientForgotPasswordChange = async (req, res) => {
     } catch (err) {
         res.status(400).send(err.message);
     }
+}
+
+module.exports.patientLogin = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const patient = await Patient.patientLogin(email,password);
+        
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
+
+//search be asma2 el drs bas
+module.exports.patientSearchDoctor = async (req,res) => {
+    const {search} = req.body;
+    try{
+       res.send(await Doctor.find({name:{$regex: ".*" + search + ".*"}}));
+
+    }catch{
+        res.status(400).send(err.message);
+    }
+}
+
+//search be Specialization bas
+module.exports.patientSearchSpecialization = async (req,res) => {
+    const {search} = req.body;
+    try{
+
+        res.send(await Doctor.find({specialization:{$regex: ".*" + search + ".*"}}));
+
+    }catch{
+        res.status(400).send(err.message);
+    }
+}
+
+//search be hospital bas
+module.exports.patientSearchHospital = async (req,res) => {
+    const {search} = req.body;
+    try{
+
+        res.send(await Hospital.find({Name:{$regex: ".*" + search + ".*"}}));
+
+    }catch{
+        res.status(400).send(err.message);
+    }
+}
+
+//search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
+module.exports.patientGeneralSerach = async(req,res) =>{
+    const {search} = req.body;
+    try {
+       
+        var result = new Array();
+        var doctors = await Doctor.find({name:{$regex: ".*" + search + ".*"}});
+        var hospitals = await Hospital.find({Name:{$regex: ".*" + search + ".*"}});
+        var specializations= await Doctor.find({specialization:{$regex: ".*" + search + ".*"}});
+        
+        result.push(doctors);
+        result.push(hospitals);
+        result.push(specializations);
+       
+        // console.log(result);
+      
+        res.send(result);
+
+    } catch {
+        res.status(400).send(err.message);
+    }
+}
+
+//function when pressed on specefic hospital it will return its Specialization
+module.exports.pressOnHospital = async(req,res) =>{
+    const {id} = req.body;
+    try{
+        res.send((await Hospital.find({_id:id}))[0].Specialization);
+
+    }catch{
+        res.status(400).send(err.message);
+    }
+}
+
+//return doctors in specefic hospital in specefic Specialization
+module.exports.pressOnHospitalThenSpecialization = async(req,res) =>{
+    const {id,search} = req.body;
+    try{
+        res.send(await Doctor.find({hospital_id:id , specialization:search}));
+
+    }catch{
+        res.status(400).send(err.message);
+    }
+
 }
