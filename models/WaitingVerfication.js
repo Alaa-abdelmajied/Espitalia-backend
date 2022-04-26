@@ -5,7 +5,7 @@ const waitingVerficationSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         required: true
     },
-    otp:{
+    otp: {
         type: String,
         required: true
     }
