@@ -64,8 +64,8 @@ patientSchema.statics.patientLogin = async function (email, password) {
     throw Error('Incorrect email or password');
 };
 
-patientSchema.statics.changePassword = async function (email, oldPassword, newPassword) {
-    const patient = await this.findOne({ email });
+patientSchema.statics.changePassword = async function (patientId, oldPassword, newPassword) {
+    const patient = await this.findOne({ patientId });
     const validPassword = await bcrypt.compare(oldPassword, patient.password);
     if (validPassword) {
         const salt = await bcrypt.genSalt();
@@ -73,12 +73,22 @@ patientSchema.statics.changePassword = async function (email, oldPassword, newPa
         await Patient.updateOne(patient, {
             password: hashedPassword
         });
-        return('done');
+        return ('done');
     }
     throw Error('Incorrect password');
 
     // const salt = await bcrypt.genSalt();
     // return bcrypt.hash(newPassword, salt);
+}
+
+patientSchema.statics.forgotPassword = async function (patientId, password) {
+    const patient = await this.findOne({ patientId });
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await Patient.updateOne(patient, {
+        password: hashedPassword
+    });
+    return ('done');
 }
 
 const Patient = mongoose.model('patient', patientSchema);
