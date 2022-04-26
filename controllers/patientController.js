@@ -1,6 +1,7 @@
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
+const Appointment = require('../models/Appointment');
 const WaitingVerfication = require('../models/WaitingVerfication');
 
 const nodemailer = require('nodemailer');
@@ -166,64 +167,64 @@ module.exports.patientForgotPasswordChange = async (req, res) => {
 module.exports.patientLogin = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const patient = await Patient.patientLogin(email,password);
-        
+        const patient = await Patient.patientLogin(email, password);
+
     } catch (err) {
         res.status(400).send(err.message);
     }
 }
 
 //search be asma2 el drs bas
-module.exports.patientSearchDoctor = async (req,res) => {
-    const {search} = req.body;
-    try{
-       res.send(await Doctor.find({name:{$regex: ".*" + search + ".*"}}));
+module.exports.patientSearchDoctor = async (req, res) => {
+    const { search } = req.body;
+    try {
+        res.send(await Doctor.find({ name: { $regex: ".*" + search + ".*" } }));
 
-    }catch{
+    } catch {
         res.status(400).send(err.message);
     }
 }
 
 //search be Specialization bas
-module.exports.patientSearchSpecialization = async (req,res) => {
-    const {search} = req.body;
-    try{
+module.exports.patientSearchSpecialization = async (req, res) => {
+    const { search } = req.body;
+    try {
 
-        res.send(await Doctor.find({specialization:{$regex: ".*" + search + ".*"}}));
+        res.send(await Doctor.find({ specialization: { $regex: ".*" + search + ".*" } }));
 
-    }catch{
+    } catch {
         res.status(400).send(err.message);
     }
 }
 
 //search be hospital bas
-module.exports.patientSearchHospital = async (req,res) => {
-    const {search} = req.body;
-    try{
+module.exports.patientSearchHospital = async (req, res) => {
+    const { search } = req.body;
+    try {
 
-        res.send(await Hospital.find({Name:{$regex: ".*" + search + ".*"}}));
+        res.send(await Hospital.find({ Name: { $regex: ".*" + search + ".*" } }));
 
-    }catch{
+    } catch {
         res.status(400).send(err.message);
     }
 }
 
 //search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
-module.exports.patientGeneralSerach = async(req,res) =>{
-    const {search} = req.body;
+module.exports.patientGeneralSerach = async (req, res) => {
+    const { search } = req.body;
     try {
-       
+
         var result = new Array();
-        var doctors = await Doctor.find({name:{$regex: ".*" + search + ".*"}});
-        var hospitals = await Hospital.find({Name:{$regex: ".*" + search + ".*"}});
-        var specializations= await Doctor.find({specialization:{$regex: ".*" + search + ".*"}});
-        
+        var doctors = await Doctor.find({ name: { $regex: ".*" + search + ".*" } });
+        var hospitals = await Hospital.find({ Name: { $regex: ".*" + search + ".*" } });
+        var specializations = await Doctor.find({ specialization: { $regex: ".*" + search + ".*" } });
+
         result.push(doctors);
         result.push(hospitals);
         result.push(specializations);
-       
+
         // console.log(result);
-      
+
         res.send(result);
 
     } catch {
@@ -232,24 +233,51 @@ module.exports.patientGeneralSerach = async(req,res) =>{
 }
 
 //function when pressed on specefic hospital it will return its Specialization
-module.exports.pressOnHospital = async(req,res) =>{
-    const {id} = req.body;
-    try{
-        res.send((await Hospital.find({_id:id}))[0].Specialization);
+module.exports.pressOnHospital = async (req, res) => {
+    const { id } = req.body;
+    try {
+        res.send((await Hospital.find({ _id: id }))[0].Specialization);
 
-    }catch{
+    } catch {
         res.status(400).send(err.message);
     }
 }
 
 //return doctors in specefic hospital in specefic Specialization
-module.exports.pressOnHospitalThenSpecialization = async(req,res) =>{
-    const {id,search} = req.body;
-    try{
-        res.send(await Doctor.find({hospital_id:id , specialization:search}));
+module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
+    const { id, search } = req.body;
+    try {
+        res.send(await Doctor.find({ hospital_id: id, specialization: search }));
 
-    }catch{
+    } catch {
         res.status(400).send(err.message);
     }
 
+}
+
+
+//Display Homepage 
+module.exports.displayHomepage = async (req, res) => {
+    try {
+        const doctor = await Doctor.aggregate([{ $project: { _id: 0, "name": 1, "specialization": 1, "rating": 1 } }, { '$sample': { 'size': 5 } }]);
+        const hospital = await Hospital.aggregate([{ $project: { _id: 0, "Name": 1, "Address": 1 } }, { '$sample': { 'size': 5 } }]);
+        const homepage_data = [doctor, hospital];
+        res.status(200).send(homepage_data);
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
+
+//Get Report
+module.exports.selectReport = async (req, res) => {
+    const { appointmentID } = req.body;
+    try {
+        const appointment = await Appointment.findOne({ _id: appointmentID });
+        const doctor = await Doctor.findOne({ _id: appointment.doctor });
+        const hospital = await Hospital.findOne({ _id: appointment.hospital });
+        const appointment_details = [{ dname: doctor.name }, { specialization: doctor.specialization }, { hname: hospital.Name }, { date: appointment.date }, { report: appointment.report }, { prescription: appointment.prescription }];
+        res.status(200).send(appointment_details);
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
 }

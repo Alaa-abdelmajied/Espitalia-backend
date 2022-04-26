@@ -15,4 +15,7 @@ router.post('/search', patientController.patientGeneralSerach);
 router.post('/pressOnHospital', patientController.pressOnHospital);
 router.post('/pressOnHospitalThenSpecialization', patientController.pressOnHospitalThenSpecialization);
 
+router.get('/report',patientController.selectReport);
+router.get('/homepage',patientController.displ)
+
 module.exports = router;
