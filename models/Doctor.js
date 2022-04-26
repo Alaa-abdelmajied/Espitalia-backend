@@ -7,7 +7,7 @@ const scheduleSchema =new mongoose.Schema({
     from:String ,
     to:String,
     AppointmentList:{
-        Types:[mongoose.Types.ObjectId]
+        type:[mongoose.Types.ObjectId]
     }
     });
 
