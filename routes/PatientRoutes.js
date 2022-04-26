@@ -16,6 +16,6 @@ router.post('/pressOnHospital', patientController.pressOnHospital);
 router.post('/pressOnHospitalThenSpecialization', patientController.pressOnHospitalThenSpecialization);
 
 router.get('/report',patientController.selectReport);
-router.get('/homepage',patientController.displ)
+router.get('/homepage',patientController.displayHomepage);
 
 module.exports = router;

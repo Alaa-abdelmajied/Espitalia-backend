@@ -23,7 +23,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const sendOtp = (patientId, patientName) => {
+const sendOtp = async (patientId, patientName, email) => {
     const otp = otpGenerator.generate(5, {
         digits: true, upperCaseAlphabets: false,
         lowerCaseAlphabets: false, specialChars: false
@@ -61,7 +61,7 @@ module.exports.patientSignup = async (req, res) => {
         // });
         // const patientId = patient.id;
         const token = createToken(patient.id);
-        sendOtp(patient.id, patient.name);
+        sendOtp(patient.id, patient.name, patient.email);
         // const waitingVerfication = 
         // await WaitingVerfication.create({
         //     patient: patientId,
