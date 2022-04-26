@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
 const { isEmail } = require('validator');
 
-
+//deh ma3mola embedded schema gwa doctor w gwaha hena feh el appointment list
 const scheduleSchema =new mongoose.Schema({
-    day:
-    {
-        type:String,
-        enum:['monday','tuesday','wednesday','thursday','friday','saturday','sunday'],
-        lowercase:true
-    },     
+    date:Date, 
     from:String ,
-    to:String});
+    to:String,
+    AppointmentList:{
+        Types:[mongoose.Types.ObjectId]
+    }
+    });
 
 const doctorSchema = new mongoose.Schema({
     name:{
@@ -47,5 +46,20 @@ const doctorSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please enter a password'],
         minlength: [6, 'Minimum password length is 6 characters']
+    },
+    hospital_id:{
+        type: mongoose.Types.ObjectId,
+        required:true,
+    },
+    currentFlowNumber:{
+        type:Number,
+        default:0
+    },
+    workingDays:{
+        type:[{
+            day:String,
+            to:String,
+            from:String
+        }]
     },
 })
