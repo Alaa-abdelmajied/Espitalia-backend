@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
-const notifications= new mongoose.schema({
-    title:{
+const notificationSchema = new mongoose.schema({
+    title: {
         type: String,
     },
-    body:{
+    body: {
         type: String,
     },
     date: {
@@ -12,9 +12,11 @@ const notifications= new mongoose.schema({
     },
 })
 
-const Notification = mongoose.model('Notification', notifications);
+const Notification = mongoose.model('notification', notificationSchema);
+
+module.exports = Notification;
 
 const notification = new Notification({
-    title:'Welcome to Espitalia',
-    body:'Try our application to reserve your appointment immediately'
+    title: 'Welcome to Espitalia',
+    body: 'Try our application to reserve your appointment immediately'
 });

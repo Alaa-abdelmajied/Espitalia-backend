@@ -1,27 +1,29 @@
 const mongoose = require('mongoose');
 
-const bloodRequests= new mongoose.schema(
+const bloodRequestSchema = new mongoose.schema(
     {
 
         hospitalID: {
             type: mongoose.Types.ObjectId,
         },
-        bloodType:{
-            type:String,
+        bloodType: {
+            type: String,
         },
-        date:{
-            type:Date,
+        date: {
+            type: Date,
         },
-        quantity:{
-            type:String,
+        quantity: {
+            type: String,
         },
 
     }
 )
 
-const BloodRequests = mongoose.model('BloodRequests', bloodRequests);
+const BloodRequest = mongoose.model('bloodRequests', bloodRequestSchema);
+
+module.exports = BloodRequest;
 
 const Request = new BloodRequests({
-    bloodType:'A+',
+    bloodType: 'A+',
     quantity: '2 litres'
 });
