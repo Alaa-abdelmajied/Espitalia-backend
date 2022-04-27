@@ -281,3 +281,24 @@ module.exports.selectReport = async (req, res) => {
         res.status(400).send(err.message);
     }
 }
+
+module.exports.getPatient = async (req, res) => {
+    const { name } = req.body;
+    const patient = await Patient.find({"name": name}).select("-password -__v");
+    if(!patient) return res.status(404).send("Patient not found");
+    res.send(patient);
+}
+
+module.exports.editProfile = async (req, res) => {
+    // takes id from the reqest body
+    const {
+        id,
+        name,
+        phoneNumber,
+        dateOfBirth,
+        questions,
+    } = req.body;
+    const patient = await Patient.findByIdAndUpdate(id, {name: name, phoneNumber: phoneNumber, dateOfBirth: dateOfBirth, questions: questions});
+    if (!patient) return res.status(404).send("Patient not found");
+    res.send(await Patient.findById(id));
+}

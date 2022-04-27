@@ -14,6 +14,7 @@ router.post('/searchHospitals', patientController.patientSearchHospital);
 router.post('/search', patientController.patientGeneralSerach);
 router.post('/pressOnHospital', patientController.pressOnHospital);
 router.post('/pressOnHospitalThenSpecialization', patientController.pressOnHospitalThenSpecialization);
+router.post('/editProfile', patientController.editProfile);
 
 router.get('/report',patientController.selectReport);
 router.get('/homepage',patientController.displayHomepage);
