@@ -16,10 +16,4 @@ const notificationSchema = new mongoose.schema({
 })
 
 const Notification = mongoose.model('notification', notificationSchema);
-
 module.exports = Notification;
-
-const notification = new Notification({
-    title: 'Welcome to Espitalia',
-    body: 'Try our application to reserve your appointment immediately'
-});

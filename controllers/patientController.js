@@ -1,4 +1,6 @@
 const Patient = require('../models/Patient');
+const Notifications = require('../models/Notifications');
+const BloodRequests = require('../models/BloodRequests');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
 const Appointment = require('../models/Appointment');
@@ -209,6 +211,19 @@ module.exports.patientSearchHospital = async (req, res) => {
     }
 }
 
+
+module.exports.getNotification=async(req,res) => {
+const notification=await Notifications.find();
+console.log(notification);
+
+try{
+    res.send(notification);
+}
+catch (err) {
+    res.status(400).send(err.message);
+}
+}
+
 //search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
 module.exports.patientGeneralSerach = async (req, res) => {
     const { search } = req.body;
@@ -292,4 +307,18 @@ module.exports.selectReport = async (req, res) => {
     } catch (err) {
         res.status(400).send(err.message);
     }
+}
+
+module.exports.editProfile = async (req, res) => {
+    // takes id from the reqest body
+    const {
+        id,
+        name,
+        phoneNumber,
+        dateOfBirth,
+        questions,
+    } = req.body;
+    const patient = await Patient.findByIdAndUpdate(id, {name: name, phoneNumber: phoneNumber, dateOfBirth: dateOfBirth, questions: questions});
+    if (!patient) return res.status(404).send("Patient not found");
+    res.send(await Patient.findById(id));
 }
