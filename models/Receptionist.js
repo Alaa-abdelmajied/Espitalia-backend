@@ -22,11 +22,11 @@ const receptionistSchema = new mongoose.Schema({
         required: [true, 'Please enter a password'],
         minlength: [6, 'Minimum password length is 6 characters']
     },
-    hospital_name: {
+    hospitalID: {
         type: String,
         required: [true, 'Please enter a hospital name']
     },
-    phone_number: {
+    phoneNumber: {
         type: Number,       // better as a string or number?
         required: [true, 'Please enter a valid phone number'],
         minlength: [11, 'Minimum phone number length is 11']
@@ -38,15 +38,13 @@ const receptionistSchema = new mongoose.Schema({
         type: String
     },
 
-    /***** days & time -> later *****/
-
-    /*working_hours: {
-        type: [Number], 
-        required: [true, 'Please enter working hours']
+    workingDays: {
+        type: [{
+            day: String,
+            to: String,
+            from: String
+        }]
     },
-    time:{
-        type:[String]
-    }*/
 
 });
 

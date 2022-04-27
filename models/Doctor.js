@@ -47,7 +47,7 @@ const doctorSchema = new mongoose.Schema({
         required: [true, 'Please enter a password'],
         minlength: [6, 'Minimum password length is 6 characters']
     },
-    hospital_id: {
+    hospitalID: {
         type: mongoose.Types.ObjectId,
         required: true,
     },
