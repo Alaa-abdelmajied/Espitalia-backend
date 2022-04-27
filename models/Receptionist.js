@@ -23,7 +23,7 @@ const receptionistSchema = new mongoose.Schema({
         minlength: [6, 'Minimum password length is 6 characters']
     },
     hospitalID: {
-        type: String,
+        type: mongoose.Types.ObjectId,
         required: [true, 'Please enter a hospital name']
     },
     phoneNumber: {

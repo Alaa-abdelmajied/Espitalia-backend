@@ -16,10 +16,10 @@ router.post('/pressOnHospital', patientController.pressOnHospital);
 router.post('/pressOnHospitalThenSpecialization', patientController.pressOnHospitalThenSpecialization);
 router.post('/editProfile', patientController.editProfile);
 
-router.get('/report',patientController.selectReport);
-router.get('/homepage',patientController.displayHomepage);
-// router.get('/oldAppointment', patientController.oldAppointments);
-// router.get('/newAppointments', patientController.newAppointments);
+router.get('/report', patientController.selectReport);
+router.get('/homepage', patientController.displayHomepage);
+router.get('/oldAppointment', patientController.oldAppointments);
+router.get('/upcomingAppointment', patientController.upcomingAppointments);
 // router.get('/getPatient', patientController.getPatient);
 // router.get('/getPatient', patientController.getPatient);
 router.get('/getNotification', patientController.getNotification);
