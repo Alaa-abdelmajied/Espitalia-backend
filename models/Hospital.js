@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt');
 //     .catch(err => console.log('Error:', err));
 
 const hospitalSchema = new mongoose.Schema({
-    Email: {
+    email: {
         type: String,
         required: true,
         unique: true,
@@ -18,19 +18,19 @@ const hospitalSchema = new mongoose.Schema({
         required: [true, 'Please enter a password'],
         minlength: [6, 'Minimum password length is 6 characters']
     },
-    Name: {
+    name: {
         type: String,
         required: true,
         minlength: 3,
         maxlength: 50,
     },
-    Address: {
+    address: {
         type: String,
         required: true,
         minlength: 3,
         maxlength: 50,
     },
-    Specialization: [{
+    specialization: [{
         type: String,
         required: true,
     }]

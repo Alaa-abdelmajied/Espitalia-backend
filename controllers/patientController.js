@@ -268,6 +268,18 @@ module.exports.displayHomepage = async (req, res) => {
     }
 }
 
+//See More
+module.exports.seeMore = async (req, res) => {
+    try {
+        const doctor_data = await Doctor.find().select({ name: 1, specialization: 1, rating: 1, _id: 0 });
+        const hospital_data = await Hospital.find().select({ name: 1, address: 1, _id: 0 });
+        const homepage_data = [doctor_data, hospital_data];
+        res.status(200).send(homepage_data);
+    } catch {
+        res.status(400).send(err.message);
+    }
+}
+
 //Get Report
 module.exports.selectReport = async (req, res) => {
     const { appointmentID } = req.body;
@@ -275,7 +287,7 @@ module.exports.selectReport = async (req, res) => {
         const appointment = await Appointment.findOne({ _id: appointmentID });
         const doctor = await Doctor.findOne({ _id: appointment.doctor });
         const hospital = await Hospital.findOne({ _id: appointment.hospital });
-        const appointment_details = [{ dname: doctor.name }, { specialization: doctor.specialization }, { hname: hospital.Name }, { date: appointment.date }, { report: appointment.report }, { prescription: appointment.prescription }];
+        const appointment_details = [{ dname: doctor.name }, { specialization: doctor.specialization }, { hname: hospital.name }, { date: appointment.date }, { report: appointment.report }, { prescription: appointment.prescription }];
         res.status(200).send(appointment_details);
     } catch (err) {
         res.status(400).send(err.message);
