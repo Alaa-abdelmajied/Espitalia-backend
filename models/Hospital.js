@@ -68,6 +68,6 @@ hospitalSchema.statics.changePassword = async function (email, oldPassword, newP
     throw Error('Incorrect password');
 }
 
-const Hospital = mongoose.model('Hospital', hospitalSchema);
+const Hospital = mongoose.model('hospital', hospitalSchema);
 
 module.exports = Hospital;

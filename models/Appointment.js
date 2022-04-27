@@ -7,7 +7,7 @@ const appointmentSchema = new mongoose.Schema({
     doctor: {
         type: mongoose.Types.ObjectId
     },
-    hopsital: {
+    hospital: {
         type: mongoose.Types.ObjectId
     },
     date: {
@@ -24,6 +24,6 @@ const appointmentSchema = new mongoose.Schema({
     }
 })
 
-const Appointment = mongoose.model('appointment', patientSchema);
+const Appointment = mongoose.model('appointment', appointmentSchema);
 
 module.exports = Appointment;
