@@ -177,38 +177,30 @@ module.exports.patientLogin = async (req, res) => {
 }
 
 //search be asma2 el drs bas
-module.exports.patientSearchDoctor = async (req, res) => {
-    const { search } = req.body;
-    try {
-        res.send(await Doctor.find({ name: { $regex: ".*" + search + ".*" } }));
-
-    } catch {
-        res.status(400).send(err.message);
-    }
+module.exports.patientSearchDoctor = async (req,res) => {
+    const search = req.params.search;
+    const doctors =await Doctor.find({name:{$regex: ".*" + search + ".*"}});
+    if(doctors.length === 0) return res.status(404).send('No doctors with that name found');
+    res.send(doctors);
+   
 }
 
 //search be Specialization bas
-module.exports.patientSearchSpecialization = async (req, res) => {
-    const { search } = req.body;
-    try {
-
-        res.send(await Doctor.find({ specialization: { $regex: ".*" + search + ".*" } }));
-
-    } catch {
-        res.status(400).send(err.message);
-    }
+module.exports.patientSearchSpecialization = async (req,res) => {
+    const search = req.params.search;
+    const specializations = await Doctor.find({specialization:{$regex: ".*" + search + ".*"}});
+    if(specializations.length === 0) return res.status(404).send('No specializations with that name found');
+    res.send(specializations);
 }
 
+
 //search be hospital bas
-module.exports.patientSearchHospital = async (req, res) => {
-    const { search } = req.body;
-    try {
-
-        res.send(await Hospital.find({ Name: { $regex: ".*" + search + ".*" } }));
-
-    } catch {
-        res.status(400).send(err.message);
-    }
+module.exports.patientSearchHospital = async (req,res) => {
+    const search = req.params.search;
+    const hospitals = await Hospital.find({name:{$regex: ".*" + search + ".*"}});
+    if(hospitals.length === 0) return res.status(404).send('No Hospitals with that name found');
+    res.send(hospitals);
+    
 }
 
 
@@ -225,49 +217,41 @@ module.exports.getNotification = async (req, res) => {
 }
 
 //search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
-module.exports.patientGeneralSerach = async (req, res) => {
-    const { search } = req.body;
-    try {
+module.exports.patientGeneralSerach = async(req,res) =>{
+    const search = req.params.search;
+    var result = new Array();
+    var doctors = await Doctor.find({ name: { $regex: ".*" + search + ".*" } });
+    var hospitals = await Hospital.find({ name: { $regex: ".*" + search + ".*" } });
+    var specializations = await Doctor.find({ specialization: { $regex: ".*" + search + ".*" } });
 
-        var result = new Array();
-        var doctors = await Doctor.find({ name: { $regex: ".*" + search + ".*" } });
-        var hospitals = await Hospital.find({ Name: { $regex: ".*" + search + ".*" } });
-        var specializations = await Doctor.find({ specialization: { $regex: ".*" + search + ".*" } });
+    result.push(doctors);
+    result.push(hospitals);
+    result.push(specializations);
 
-        result.push(doctors);
-        result.push(hospitals);
-        result.push(specializations);
-
-        // console.log(result);
-
-        res.send(result);
-
-    } catch {
-        res.status(400).send(err.message);
-    }
+    if (result[0].length === 0 & result[1].length === 0 &result[2].length === 0 ) return res.status(404).send('No hospitals or doctors or specializations found');
+    res.send(result);
+ 
 }
 
 //function when pressed on specefic hospital it will return its Specialization
-module.exports.pressOnHospital = async (req, res) => {
-    const { id } = req.body;
+module.exports.pressOnHospital = async(req,res) =>{
+    const id = req.params.id;
     try {
-        res.send((await Hospital.find({ _id: id }))[0].Specialization);
-
-    } catch {
-        res.status(400).send(err.message);
+        const specialization = (await Hospital.find({_id:id}))[0].specialization;
+        res.send(specialization);
+    } catch (error) {
+        res.status(404).send('No specialization found');
     }
+        
 }
 
 //return doctors in specefic hospital in specefic Specialization
-module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
-    const { id, search } = req.body;
-    try {
-        res.send(await Doctor.find({ hospital_id: id, specialization: search }));
-
-    } catch {
-        res.status(400).send(err.message);
-    }
-
+module.exports.pressOnHospitalThenSpecialization = async(req,res) =>{
+    const id = req.params.id;
+    const search = req.params.search;
+    const doctors = await Doctor.find({hospital_id:id , specialization:search});
+    if(doctors.length === 0) return res.status(404).send('No doctors here');
+    res.send(doctors);
 }
 
 
