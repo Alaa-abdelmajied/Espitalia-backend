@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const bloodRequests= new mongoose.Schema(
+const bloodRequestSchema= new mongoose.Schema(
     {
 
         hospitalID: {
@@ -19,8 +19,6 @@ const bloodRequests= new mongoose.Schema(
     }
 )
 
-const BloodRequest = mongoose.model('bloodRequests', bloodRequestSchema);
+const BloodRequest = mongoose.model('bloodRequest', bloodRequestSchema);
 
 module.exports = BloodRequest;
-
-module.exports = BloodRequests;

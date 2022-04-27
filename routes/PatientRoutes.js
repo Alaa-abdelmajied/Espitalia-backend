@@ -18,11 +18,11 @@ router.post('/editProfile', patientController.editProfile);
 
 router.get('/report',patientController.selectReport);
 router.get('/homepage',patientController.displayHomepage);
-router.get('/oldAppointment', patientController.oldAppointments);
-router.get('/newAppointments', patientController.newAppointments);
-router.get('/getPatient', patientController.getPatient);
-router.get('/getPatient', patientController.getPatient);
+// router.get('/oldAppointment', patientController.oldAppointments);
+// router.get('/newAppointments', patientController.newAppointments);
+// router.get('/getPatient', patientController.getPatient);
+// router.get('/getPatient', patientController.getPatient);
 router.get('/getNotification', patientController.getNotification);
-router.get('/getBloodRequests', patientController.getBloodRequests);
+// router.get('/getBloodRequests', patientController.getBloodRequests);
 
 module.exports = router;
