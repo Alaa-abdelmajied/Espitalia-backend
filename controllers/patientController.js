@@ -264,7 +264,7 @@ module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
 module.exports.displayHomepage = async (req, res) => {
     try {
         const doctor = await Doctor.aggregate([{ $project: { _id: 0, "name": 1, "specialization": 1, "rating": 1 } }, { '$sample': { 'size': 5 } }]);
-        const hospital = await Hospital.aggregate([{ $project: { _id: 0, "Name": 1, "Address": 1 } }, { '$sample': { 'size': 5 } }]);
+        const hospital = await Hospital.aggregate([{ $project: { _id: 0, "name": 1, "address": 1 } }, { '$sample': { 'size': 5 } }]);
         const homepage_data = [doctor, hospital];
         res.status(200).send(homepage_data);
     } catch (err) {
