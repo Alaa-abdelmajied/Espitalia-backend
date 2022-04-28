@@ -6,10 +6,15 @@ const Hospital = require('../models/Hospital');
 const Appointment = require('../models/Appointment');
 const Specialization = require('../models/Specialization');
 const WaitingVerfication = require('../models/WaitingVerfication');
+const conn = require('../app');
+
 
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
 const jwt = require('jsonwebtoken');
+const  mongoose  = require('mongoose');
+const ObjectId = require('mongodb').ObjectId;
+
 
 
 const createToken = (id) => {
@@ -373,5 +378,58 @@ module.exports.reviewDoctor = async (req, res) => {
         res.status(200).send(reviewDetails);
     } catch (err) {
         res.status(400).send(err.message);
+    }
+}
+
+module.exports.book = async(req,res) =>{
+
+    const{userId,drId,date,from,to} = req.body;
+
+    const doctor = await Doctor.findById(drId);
+
+    const hospitalId = doctor.hospital_id;
+
+    const schedule = doctor.schedule;
+  
+
+    let obj =  doctor.schedule.find(o=>o.to === to & o.from === from &
+        Date.parse(o.date) === Date.parse(date));
+
+    const indexOfScehdule = doctor.schedule.indexOf(obj);
+
+    const flowNumber = obj.AppointmentList.length + 1;
+
+
+
+    try{
+        const db = await mongoose.createConnection('mongodb+srv://Alaa:FpX3KihZBF5jaCV@espitaliacluster.ozn3j.mongodb.net/espitaliaDb?retryWrites=true&w=majority').asPromise();
+        const session = await db.startSession();       
+         await session.withTransaction(async ()=>{
+            const appointment = await Appointment.create([{
+                _id:ObjectId(),
+                patient:userId,
+                doctor:drId,
+                date:obj.date,
+                flowNumber:flowNumber,
+                hospital:hospitalId,
+            }],{session});
+            await Patient.findByIdAndUpdate(userId,{
+                $push:{
+                    newAppointments:appointment[0].id,
+             }},{session});
+
+             obj.AppointmentList.push(appointment[0]._id);
+             schedule[indexOfScehdule]=obj;
+
+             await Doctor.findByIdAndUpdate(drId,{
+                 $set:{
+                    schedule:schedule
+                }},{session});
+        });
+        //console.log(x);
+        session.endSession();
+        console.log('success');
+    }catch(error){
+        console.log('error');
     }
 }
