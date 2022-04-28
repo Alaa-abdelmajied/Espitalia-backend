@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const bloodRequestSchema= new mongoose.Schema(
     {
 
+        // userID:{
+        //     type:mongoose.Types.ObjectId,
+        // },
         hospitalID: {
             type: mongoose.Types.ObjectId,
         },

@@ -32,10 +32,10 @@ router.get('/seeMore', patientController.seeMore);
 router.get('/oldAppointment', patientController.oldAppointments);
 router.get('/upcomingAppointment', patientController.upcomingAppointments);
 // router.get('/getPatient', patientController.getPatient);
-// router.get('/getPatient', patientController.getPatient);
+router.get('/getPatient', patientController.getPatient);
 router.get('/getNotification', patientController.getNotification);
 router.post('/review', patientController.reviewDoctor);
-// router.get('/getBloodRequests', patientController.getBloodRequests);
+router.get('/getBloodRequests', patientController.getBloodRequests);
 router.get('/currentFlowNumber', patientController.getFlowOfEntrance);
 
 module.exports = router;
