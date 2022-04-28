@@ -8,6 +8,8 @@ router.post('/signup', patientController.patientSignup);
 router.post('/login', patientController.patientLogin);
 router.post('/verify', patientController.verifyAccount);
 router.post('/changePassword', patientController.patientChangePassword);
+router.post('/forgotPassword', patientController.patientForgotPassword);
+router.post('/forgotPasswordChange', patientController.patientForgotPasswordChange);
 router.post('/searchDoctors', patientController.patientSearchDoctor);
 router.post('/searchSpecialization', patientController.patientSearchSpecialization);
 router.post('/searchHospitals', patientController.patientSearchHospital);
