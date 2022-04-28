@@ -13,7 +13,6 @@ const patientSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Please enter a password'],
-        minlength: [6, 'Minimum password length is 6 characters']
     },
     name: {
         type: String,
@@ -37,10 +36,10 @@ const patientSchema = new mongoose.Schema({
     questions: {
         type: Boolean
     },
-    oldAppointments:{
+    oldAppointments: {
         type: [mongoose.Types.ObjectId]
     },
-    newAppointments:{
+    newAppointments: {
         type: [mongoose.Types.ObjectId]
     },
     verified: {
@@ -68,7 +67,7 @@ patientSchema.statics.patientLogin = async function (email, password) {
 };
 
 patientSchema.statics.changePassword = async function (patientId, oldPassword, newPassword) {
-    const patient = await this.findOne({ patientId });
+    const patient = await this.findOne({ _id: patientId });
     const validPassword = await bcrypt.compare(oldPassword, patient.password);
     if (validPassword) {
         const salt = await bcrypt.genSalt();
@@ -79,15 +78,12 @@ patientSchema.statics.changePassword = async function (patientId, oldPassword, n
         return ('done');
     }
     throw Error('Incorrect password');
-
-    // const salt = await bcrypt.genSalt();
-    // return bcrypt.hash(newPassword, salt);
 }
 
-patientSchema.statics.forgotPassword = async function (patientId, password) {
-    const patient = await this.findOne({ patientId });
+patientSchema.statics.forgotPassword = async function (patientId, newpassword) {
+    const patient = await this.findOne({ _id: patientId });
     const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(newpassword, salt);
     await Patient.updateOne(patient, {
         password: hashedPassword
     });
