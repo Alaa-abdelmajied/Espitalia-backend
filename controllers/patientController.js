@@ -4,6 +4,7 @@ const BloodRequests = require('../models/BloodRequests');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
 const Appointment = require('../models/Appointment');
+const Specialization = require('../models/Specialization');
 const WaitingVerfication = require('../models/WaitingVerfication');
 
 const nodemailer = require('nodemailer');
@@ -187,11 +188,23 @@ module.exports.patientSearchDoctor = async (req,res) => {
 }
 
 //search be Specialization bas
-module.exports.patientSearchSpecialization = async (req,res) => {
+// module.exports.patientSearchSpecialization = async (req,res) => {
+//     const search = req.params.search;
+//     const specializations = await Doctor.find({specialization:{$regex: ".*" + search + ".*"}});
+//     if(specializations.length === 0) return res.status(404).send('No specializations with that name found');
+//     res.send(specializations);
+// }
+
+//search be specialization table
+module.exports.patientSearchSpecialization = async (req,res) =>{
     const search = req.params.search;
-    const specializations = await Doctor.find({specialization:{$regex: ".*" + search + ".*"}});
-    if(specializations.length === 0) return res.status(404).send('No specializations with that name found');
-    res.send(specializations);
+    try{
+        const specializations = await Specialization.find({name:search});
+        console.log(specializations[0].doctorIds);
+        res.send(specializations[0].doctorIds);
+    }catch(error){
+        res.status(404).send(error.message);
+    }
 }
 
 
