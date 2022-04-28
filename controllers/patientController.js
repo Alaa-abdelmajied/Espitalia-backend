@@ -358,3 +358,20 @@ module.exports.rateDoctor = async (req, res) => {
         res.status(400).send(err.message);
     }
 }
+
+//Review dr
+module.exports.reviewDoctor = async (req, res) => {
+    const { review, doctorID, userID } = req.body;
+    try {
+        const { name } = await Patient.findOne({ _id: userID });
+        await Doctor.findByIdAndUpdate({ _id: doctorID }, { $push: { reviews: [name, review] } });
+        const doctor = await Doctor.findOne({ _id: doctorID });
+        const date = new Date();
+        const fullDate = date.getDate() + '-' + date.getMonth() + '-' + date.getFullYear();
+        const reviewDetails = [{ name: name }, { date: fullDate }, { rating: doctor.rating }, { review: review }];
+        console.log(reviewDetails)
+        res.status(200).send(reviewDetails);
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}

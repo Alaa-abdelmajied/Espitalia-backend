@@ -28,7 +28,11 @@ const doctorSchema = new mongoose.Schema({
         type: Number,
     },
     reviews: {
-        type: [String]
+        type: [{
+            name: String,
+            rating: Number,
+            review: String,
+        }]
     },
     email: {
         type: String,
