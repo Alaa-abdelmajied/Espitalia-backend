@@ -12,11 +12,8 @@ const otpGenerator = require('otp-generator');
 const jwt = require('jsonwebtoken');
 
 
-// const maxAge = 3 * 24 * 60 * 60;
 const createToken = (id) => {
-    return jwt.sign({ id }, 'Grad_Proj.Espitalia#SecRet.Application@30132825275'/*, {
-        expiresIn: maxAge
-    }*/);
+    return jwt.sign({ id }, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
 };
 
 const transporter = nodemailer.createTransport({
@@ -84,8 +81,24 @@ module.exports.patientLogin = async (req, res) => {
             sendOtp(patient.id, patient.name, patient.email);
             res.status(200).send({ verified: patient.verified, token })
         } else {
+            await Patient.updateOne(patient, {
+                loggedIn: true
+            });
             res.status(200).send({ verified: patient.verified, token })
         }
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
+
+module.exports.patientLogout = async (req, res) => {
+    const { token } = req.body;
+    try {
+        const decodedToken = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+        await Patient.updateOne({ _id: decodedToken.id }, {
+            loggedIn: false
+        });
+        res.status(200).send('Logged Out');
     } catch (err) {
         res.status(400).send(err.message);
     }
@@ -98,9 +111,9 @@ module.exports.verifyAccount = async (req, res) => {
         const waitingVerfication = await WaitingVerfication.findOne({ patient: decodedToken.id });
         if (otp == waitingVerfication.otp) {
             if (!forgot) {
-                const patient = await Patient.findOne({ _id: waitingVerfication.patient });
-                await Patient.updateOne(patient, {
-                    verified: true
+                await Patient.updateOne({ _id: waitingVerfication.patient }, {
+                    verified: true,
+                    loggedIn: true
                 });
             }
             await WaitingVerfication.deleteOne({ patient: decodedToken.id });
@@ -152,12 +165,12 @@ module.exports.patientForgotPasswordChange = async (req, res) => {
 }
 
 //search be asma2 el drs bas
-module.exports.patientSearchDoctor = async (req,res) => {
+module.exports.patientSearchDoctor = async (req, res) => {
     const search = req.params.search;
-    const doctors =await Doctor.find({name:{$regex: ".*" + search + ".*"}});
-    if(doctors.length === 0) return res.status(404).send('No doctors with that name found');
+    const doctors = await Doctor.find({ name: { $regex: ".*" + search + ".*" } });
+    if (doctors.length === 0) return res.status(404).send('No doctors with that name found');
     res.send(doctors);
-   
+
 }
 
 //search be Specialization bas
@@ -169,25 +182,25 @@ module.exports.patientSearchDoctor = async (req,res) => {
 // }
 
 //search be specialization table
-module.exports.patientSearchSpecialization = async (req,res) =>{
+module.exports.patientSearchSpecialization = async (req, res) => {
     const search = req.params.search;
-    try{
-        const specializations = await Specialization.find({name:search});
+    try {
+        const specializations = await Specialization.find({ name: search });
         console.log(specializations[0].doctorIds);
         res.send(specializations[0].doctorIds);
-    }catch(error){
+    } catch (error) {
         res.status(404).send(error.message);
     }
 }
 
 
 //search be hospital bas
-module.exports.patientSearchHospital = async (req,res) => {
+module.exports.patientSearchHospital = async (req, res) => {
     const search = req.params.search;
-    const hospitals = await Hospital.find({name:{$regex: ".*" + search + ".*"}});
-    if(hospitals.length === 0) return res.status(404).send('No Hospitals with that name found');
+    const hospitals = await Hospital.find({ name: { $regex: ".*" + search + ".*" } });
+    if (hospitals.length === 0) return res.status(404).send('No Hospitals with that name found');
     res.send(hospitals);
-    
+
 }
 
 
@@ -204,7 +217,7 @@ module.exports.getNotification = async (req, res) => {
 }
 
 //search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
-module.exports.patientGeneralSerach = async(req,res) =>{
+module.exports.patientGeneralSerach = async (req, res) => {
     const search = req.params.search;
     var result = new Array();
     var doctors = await Doctor.find({ name: { $regex: ".*" + search + ".*" } });
@@ -215,29 +228,29 @@ module.exports.patientGeneralSerach = async(req,res) =>{
     result.push(hospitals);
     result.push(specializations);
 
-    if (result[0].length === 0 & result[1].length === 0 &result[2].length === 0 ) return res.status(404).send('No hospitals or doctors or specializations found');
+    if (result[0].length === 0 & result[1].length === 0 & result[2].length === 0) return res.status(404).send('No hospitals or doctors or specializations found');
     res.send(result);
- 
+
 }
 
 //function when pressed on specefic hospital it will return its Specialization
-module.exports.pressOnHospital = async(req,res) =>{
+module.exports.pressOnHospital = async (req, res) => {
     const id = req.params.id;
     try {
-        const specialization = (await Hospital.find({_id:id}))[0].specialization;
+        const specialization = (await Hospital.find({ _id: id }))[0].specialization;
         res.send(specialization);
     } catch (error) {
         res.status(404).send('No specialization found');
     }
-        
+
 }
 
 //return doctors in specefic hospital in specefic Specialization
-module.exports.pressOnHospitalThenSpecialization = async(req,res) =>{
+module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
     const id = req.params.id;
     const search = req.params.search;
-    const doctors = await Doctor.find({hospital_id:id , specialization:search});
-    if(doctors.length === 0) return res.status(404).send('No doctors here');
+    const doctors = await Doctor.find({ hospital_id: id, specialization: search });
+    if (doctors.length === 0) return res.status(404).send('No doctors here');
     res.send(doctors);
 }
 
@@ -332,3 +345,16 @@ module.exports.editProfile = async (req, res) => {
     res.send(await Patient.findById(id));
 }
 
+module.exports.rateDoctor = async (req, res) => {
+    const { token, doctorId, rate } = req.body;
+    try {
+        const decodedToken = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+        const { name } = await Patient.findOne({ _id: decodedToken.id });
+        const doctor = await Doctor.findOne({ _id: doctorId });
+        const numberOfReviews = doctor.workingDays.length;
+        const newRate = ((doctor.rating * numberOfReviews) + Number(rate)) / (numberOfReviews + 1);
+        res.status(200).send({ newRate, name });
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
