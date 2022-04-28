@@ -293,6 +293,44 @@ module.exports.selectReport = async (req, res) => {
     }
 }
 
+//Old Appointments
+module.exports.oldAppointments = async (req, res) => {
+    const { userID } = req.body;
+    try {
+        const patient = await Patient.findOne({ _id: userID });
+        const old_appointment = await Appointment.find({ _id: patient.oldAppointments });
+        var appointment_details = [];
+        for (let i = 0; i < Object.keys(old_appointment).length; i++) {
+            const doctor = await Doctor.findOne({ _id: old_appointment[i].doctor });
+            const hospital = await Hospital.findOne({ _id: old_appointment[i].hospital });
+            appointment_details.push([{ hname: hospital.Name }, { dname: doctor.name }, { specialization: doctor.specialization }, { date: old_appointment[i].date }]);
+        }
+        res.status(200).send(appointment_details);
+
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
+
+//Upcoming appointments
+module.exports.upcomingAppointments = async (req, res) => {
+    const { userID } = req.body;
+    try {
+        const patient = await Patient.findOne({ _id: userID });
+        const upcoming_appointment = await Appointment.find({ _id: patient.newAppointments });
+        var appointment_details = [];
+        for (let i = 0; i < Object.keys(upcoming_appointment).length; i++) {
+            const doctor = await Doctor.findOne({ _id: upcoming_appointment[i].doctor });
+            const hospital = await Hospital.findOne({ _id: upcoming_appointment[i].hospital });
+            appointment_details.push([{ hname: hospital.Name }, { dname: doctor.name }, { specialization: doctor.specialization }, { date: upcoming_appointment[i].date }, { number: upcoming_appointment[i].flowNumber }]);
+        }
+        res.status(200).send(appointment_details);
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
+
+
 module.exports.editProfile = async (req, res) => {
     // takes id from the reqest body
     const {
@@ -316,6 +354,23 @@ module.exports.rateDoctor = async (req, res) => {
         const numberOfReviews = doctor.workingDays.length;
         const newRate = ((doctor.rating * numberOfReviews) + Number(rate)) / (numberOfReviews + 1);
         res.status(200).send({ newRate, name });
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
+
+//Review dr
+module.exports.reviewDoctor = async (req, res) => {
+    const { review, doctorID, userID } = req.body;
+    try {
+        const { name } = await Patient.findOne({ _id: userID });
+        await Doctor.findByIdAndUpdate({ _id: doctorID }, { $push: { reviews: [name, review] } });
+        const doctor = await Doctor.findOne({ _id: doctorID });
+        const date = new Date();
+        const fullDate = date.getDate() + '-' + date.getMonth() + '-' + date.getFullYear();
+        const reviewDetails = [{ name: name }, { date: fullDate }, { rating: doctor.rating }, { review: review }];
+        console.log(reviewDetails)
+        res.status(200).send(reviewDetails);
     } catch (err) {
         res.status(400).send(err.message);
     }
