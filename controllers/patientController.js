@@ -10,11 +10,6 @@ const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
 const jwt = require('jsonwebtoken');
 
-const Fawn = require('fawn');
-const ObjectId = require('mongodb').ObjectId;
-
-Fawn.init('mongodb+srv://Alaa:FpX3KihZBF5jaCV@espitaliacluster.ozn3j.mongodb.net/espitaliaDb?retryWrites=true&w=majority');
-
 
 // const maxAge = 3 * 24 * 60 * 60;
 const createToken = (id) => {
@@ -313,49 +308,3 @@ module.exports.editProfile = async (req, res) => {
     res.send(await Patient.findById(id));
 }
 
-module.exports.book = async(req,res)=>{
-    const{userId,drId,date,from,to} = req.body;
-    try{
-
-    const doctor = await Doctor.findById(drId);
-
-    const hospitalId = doctor.hospital_id;
-
-    const schedule = doctor.schedule;
-
-    let obj =  doctor.schedule.find(o=>o.to === to & o.from === from &
-        Date.parse(o.date) === Date.parse(date));
-
-    const indexOfScehdule = doctor.schedule.indexOf(obj);
-
-    const flowNumber = obj.AppointmentList.length + 1;
-
-    const appointment = new Appointment({
-        _id:ObjectId(),
-        patient:userId,
-        doctor:drId,
-        date:obj.date,
-        flowNumber:flowNumber,
-        hospital:hospitalId,
-    });
-
-    var task = await new Fawn.Task();
-        task.save('appointments',appointment);
-        task.update('patients',{_id:userId},{
-            $push:{
-               newAppointments:appointment._id
-            }
-        });
-        obj.AppointmentList.push(appointment._id);
-        schedule[indexOfScehdule]=obj;
-        task.update('doctors',{_id:drId},{
-            $set:{
-                schedule:schedule
-             }
-        });
-        task.run({useMongoose:true});
-    }catch(err){
-        res.send(err.message);
-    }
-
-}
