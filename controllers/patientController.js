@@ -111,7 +111,6 @@ module.exports.verifyAccount = async (req, res) => {
         const waitingVerfication = await WaitingVerfication.findOne({ patient: decodedToken.id });
         if (otp == waitingVerfication.otp) {
             if (!forgot) {
-                // const patient = await Patient.findOne({ _id: waitingVerfication.patient });
                 await Patient.updateOne({ _id: waitingVerfication.patient }, {
                     verified: true,
                     loggedIn: true
@@ -308,3 +307,16 @@ module.exports.editProfile = async (req, res) => {
     res.send(await Patient.findById(id));
 }
 
+module.exports.rateDoctor = async (req, res) => {
+    const { token, doctorId, rate } = req.body;
+    try {
+        const decodedToken = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+        const { name } = await Patient.findOne({ _id: decodedToken.id });
+        const doctor = await Doctor.findOne({ _id: doctorId });
+        const numberOfReviews = doctor.workingDays.length;
+        const newRate = ((doctor.rating * numberOfReviews) + Number(rate)) / (numberOfReviews + 1);
+        res.status(200).send({ newRate, name });
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}
