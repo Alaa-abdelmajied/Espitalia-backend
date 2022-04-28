@@ -45,6 +45,10 @@ const patientSchema = new mongoose.Schema({
     verified: {
         type: Boolean,
         default: false
+    },
+    loggedIn: {
+        type: Boolean,
+        default: false
     }
 });
 
