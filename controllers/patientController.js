@@ -373,7 +373,13 @@ module.exports.upcomingAppointments = async (req, res) => {
     }
 }
 
-
+/*
+    Edit Patient's Profile:
+        function takes parameters : id, name, phone number, date of birth, and answers for the medical questions
+        then, search for a patient with the associated id.
+        when it finds the patient it  updates his record.
+        if the patient is not found, the function return 404 error (not found error).
+*/
 module.exports.editProfile = async (req, res) => {
     // takes id from the reqest body
     const {
