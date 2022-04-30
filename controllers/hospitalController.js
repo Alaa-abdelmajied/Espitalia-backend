@@ -2,6 +2,7 @@ const Hospital = require('../models/Hospital');
 const validator = require('validator');
 const jsonwebtoken = require('jsonwebtoken');
 const Doctor = require('../models/Doctor');
+const Receptionist = require('../models/Receptionist');
 
 
 const createToken = ( id ) => {
@@ -50,7 +51,29 @@ module.exports.deactivateDoctor = async (req, res) => {
 }
 
 module.exports.addReceptionist = async (req, res) => {
+    const {name,username,email,password,hospitalID,phoneNumber,education,from,workingDays} = req.body;
+    const newReceptionist = await Receptionist.create({
+        name: name,
+        username: username,
+        email: email,
+        password: password,
+        hospitalID,
+        phoneNumber: phoneNumber,
+        education,
+        from: from,
+        workingDays: workingDays
+    });
+    if(!newReceptionist) return res.status(400).send("bad request");
+    res.send(newReceptionist);
+}
 
+module.exports.viewReceptionists = async (req, res) => {
+    //const id_ = req.params.id;
+    const {id} = req.body;
+    //console.log(id);
+    const receptionists = await Receptionist.find({hospitalID: id});
+    if (!receptionists) return res.status(404).send("nothing found");
+    res.send(receptionists);
 }
 
 module.exports.deactivateReceptionist = async (req, res) => {
