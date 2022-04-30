@@ -6,7 +6,7 @@ const Hospital = require('../models/Hospital');
 const Appointment = require('../models/Appointment');
 const Specialization = require('../models/Specialization');
 const WaitingVerfication = require('../models/WaitingVerfication');
-const conn = require('../app');
+const conn = require('../db');
 
 
 const nodemailer = require('nodemailer');
@@ -446,8 +446,7 @@ module.exports.book = async (req, res) => {
 
 
     try {
-        const db = await mongoose.createConnection('mongodb+srv://Alaa:FpX3KihZBF5jaCV@espitaliacluster.ozn3j.mongodb.net/espitaliaDb?retryWrites=true&w=majority').asPromise();
-        const session = await db.startSession();
+        const session = await conn.startSession();
         await session.withTransaction(async () => {
             const appointment = await Appointment.create([{
                 _id: ObjectId(),
