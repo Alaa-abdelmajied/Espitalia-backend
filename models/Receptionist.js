@@ -45,6 +45,10 @@ const receptionistSchema = new mongoose.Schema({
             from: String
         }]
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 
 });
 

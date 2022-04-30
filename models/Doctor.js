@@ -66,6 +66,10 @@ const doctorSchema = new mongoose.Schema({
             from: String
         }]
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 })
 
 const Doctor = mongoose.model('doctor', doctorSchema);
