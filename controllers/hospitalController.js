@@ -17,8 +17,16 @@ module.exports.hospitalLogin = async (req, res) => {
     }
 }
 
+//TODO: need to be checked or modified
 module.exports.Logout = async (req, res) => {
-    
+    const { id, token } = req.body;
+    try{
+        const decodedToken = jsonwebtoken.verify(token,'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+        await Hospital.findById(decodedToken.id);
+        res.send("Logged out");
+    } catch(error) {
+        res.status(400).send("bad request");
+    }
 }
 
 module.exports.viewDoctors = async (req, res) => {
