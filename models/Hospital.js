@@ -22,13 +22,13 @@ const hospitalSchema = new mongoose.Schema({
         type: String,
         required: true,
         minlength: 3,
-        maxlength: 50,
+        maxlength: 255,
     },
     address: {
         type: String,
         required: true,
         minlength: 3,
-        maxlength: 50,
+        maxlength: 255,
     },
     specialization: [{
         type: String,
