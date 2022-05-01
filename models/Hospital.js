@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jsonwebtoken = require('jsonwebtoken');
+
 // TODO: install config module, make a config folder and make default.json and custom-environment-variables.json
 // in default.json:
 //      {
@@ -14,11 +15,6 @@ const jsonwebtoken = require('jsonwebtoken');
 //then,
 //  replace the "PrivateKey" in jwt.sign() with config.get('jwtPrivateKey')
 //and don't forget to set the environment variable
-//
-
-// mongoose.connect('mongodb://localhost/EspitaliaDB')
-//     .then(() => console.log('Connected.'))
-//     .catch(err => console.log('Error:', err));
 
 const hospitalSchema = new mongoose.Schema({
     email: {
