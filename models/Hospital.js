@@ -1,10 +1,20 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
+const jsonwebtoken = require('jsonwebtoken');
 
-// mongoose.connect('mongodb://localhost/EspitaliaDB')
-//     .then(() => console.log('Connected.'))
-//     .catch(err => console.log('Error:', err));
+// TODO: install config module, make a config folder and make default.json and custom-environment-variables.json
+// in default.json:
+//      {
+//          "jwtPrivateKey": ""
+//      }
+// in custom-environment-variables.json:
+//      {
+//          "jwtPrivateKey": "Esbitalia_jwtPrivateKey"
+//      }
+//then,
+//  replace the "PrivateKey" in jwt.sign() with config.get('jwtPrivateKey')
+//and don't forget to set the environment variable
 
 const hospitalSchema = new mongoose.Schema({
     email: {
@@ -35,6 +45,13 @@ const hospitalSchema = new mongoose.Schema({
         required: true,
     }]
 });
+
+hospitalSchema.methods.generateAuthToken = function() {
+    //FIXME:
+    //  the private key should be an environment variable
+    const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
+    return token;
+}
 
 hospitalSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt();
@@ -69,5 +86,15 @@ hospitalSchema.statics.changePassword = async function (email, oldPassword, newP
 }
 
 const Hospital = mongoose.model('hospital', hospitalSchema);
+
+function validateHospital(hospital) {
+    const schema = {
+        name: Joi.string().min(3).max(255).require(),
+        email: Joi.string().min(3).max(255).email().require(),
+        password: Joi.string().min(8).max(250).password().require(),
+        address: Joi.string().min(3).max(255).require(),
+    };
+    return Joi.validate(hospital,schema);
+}
 
 module.exports = Hospital;

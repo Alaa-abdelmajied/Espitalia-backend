@@ -1,3 +1,4 @@
+const Joi = require('joi');
 const mongoose = require('mongoose');
 const { isEmail } = require('validator');
 
@@ -71,6 +72,16 @@ const doctorSchema = new mongoose.Schema({
         default: true
     }
 })
+
+function validate(doctor) {
+    const schema = {
+        name: Joi.string().min(3).max(255).required(),
+        userName: Joi.string().min(3).max(255).required(),
+        email: Joi.string().min(3).max(255).email().required(),
+        specialization: Joid.string().min(3).max(255).required(),
+    }
+    return Joi.validate(doctor, schema);
+}
 
 const Doctor = mongoose.model('doctor', doctorSchema);
 
