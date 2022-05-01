@@ -1,7 +1,8 @@
 const Patient = require('../models/Patient');
 const Notifications = require('../models/Notifications');
 const BloodRequests = require('../models/BloodRequests');
-const Doctor = require('../models/Doctor');
+const {Doctor} = require('../models/Doctor');
+const {Schedule} = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
 const Appointment = require('../models/Appointment');
 const Specialization = require('../models/Specialization');
@@ -14,6 +15,7 @@ const otpGenerator = require('otp-generator');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const ObjectId = require('mongodb').ObjectId;
+const date = require('date-and-time');
 
 
 
@@ -292,7 +294,7 @@ module.exports.pressOnHospital = async (req, res) => {
 module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
     const id = req.params.id;
     const search = req.params.search;
-    const doctors = await Doctor.find({ hospital_id: id, specialization: search });
+    const doctors = await Doctor.find({ hospitalID: id, specialization: search });
     if (doctors.length === 0) return res.status(404).send('No doctors here');
     res.send(doctors);
 }
@@ -431,7 +433,7 @@ module.exports.book = async (req, res) => {
 
     const doctor = await Doctor.findById(drId);
 
-    const hospitalId = doctor.hospital_id;
+    const hospitalId = doctor.hospitalID;
 
     const schedule = doctor.schedule;
 
@@ -487,4 +489,86 @@ module.exports.getFlowOfEntrance = async (req, res) => {
     } catch (err) {
         res.status(400).send(err.message);
     }
+}
+
+//function to update db scheudles most probably it will be moved to dr controller
+//var intervalID = setInterval(myCallback, 5000);
+async function myCallback() {
+    const drs = await Doctor.find();
+    for (dr of drs) {
+        const schedules = dr.schedule;
+        const drId = dr._id;
+        const workingDays = dr.workingDays;
+        let newSchedule = [];
+        let flag = false;
+        for (schedule of schedules) {
+            
+
+            if ((date.subtract(schedule.date, new Date(Date.now())).toDays() < 0) &
+                (new Date(schedule.date).getDay() != new Date(Date.now()).getDay())) {
+                console.log("henaaa");
+                flag = true;
+            } else {
+                newSchedule.push(schedule);
+            }
+        }
+
+        if (flag) {
+            //last day in schudles
+            let length = dr.schedule.length;
+            let arr = date.format(dr.schedule[length - 1].date, 'ddd, MMM DD YYYY');
+            let dayInDb = arr.split(',');
+            let lastDayInDb = dayInDb[0];
+
+            //index of that last day in working days in order to bring the next day after it
+            let day = workingDays.find(o => o.day === lastDayInDb.toLowerCase());
+            const indexOfDay = workingDays.indexOf(day);
+
+            //bringing next day in working days
+            let nextDayIndex = 0;
+            if(indexOfDay < workingDays.length - 1)
+                nextDayIndex = indexOfDay + 1;
+
+            //making new scheudle with that next day   
+            //el bafakr feh en ha-loop men 2wl el yom el 25eer fel schedule w hazwd yom kol mara
+            //w akarn el ayam be asamyhom awl ma la2y el yom el ana 3awzah ha break el loop w a7ot fel schedule el gded
+            let lastDayInSchedule = dr.schedule[length-1].date;
+            while(1){
+                let nextDay = date.addDays(lastDayInSchedule,1);
+                let arr = date.format(nextDay, 'ddd, MMM DD YYYY');
+                let x = arr.split(',');
+                let nextDayInLetters = x[0];
+                if(nextDayInLetters.toLowerCase() ==  workingDays[nextDayIndex].day){
+                    addedSchedule= new Schedule({
+                        "date":nextDay,
+                        "to": workingDays[nextDayIndex].to,
+                        "from": workingDays[nextDayIndex].from,
+                        "AppointmentList":[]
+                    });
+                    newSchedule.push(addedSchedule);
+                    if(nextDayIndex != workingDays.length-1){
+                        if(workingDays[nextDayIndex].day == workingDays[nextDayIndex+1].day){
+                            addedSchedule= new Schedule({
+                                "date": nextDay,
+                                "to": workingDays[nextDayIndex+1].to,
+                                "from": workingDays[nextDayIndex+1].from,
+                                "AppointmentList":[]
+                            });
+                            newSchedule.push(addedSchedule);
+                        }
+                    }
+                    break;
+                }
+                lastDayInSchedule=nextDay;
+            }
+
+        } 
+
+         await Doctor.findByIdAndUpdate(drId,{
+             $set:{
+                 schedule:newSchedule,
+             }
+         });
+    }
+
 }
