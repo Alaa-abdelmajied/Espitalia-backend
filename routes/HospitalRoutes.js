@@ -16,7 +16,7 @@ router.get('/viewReceptionists', hospitalController.viewReceptionists);
 
 //TODO: PUT request:
 router.put('/deactivateDoctor', hospitalController.deactivateDoctor);
-router.put('/activateDoctor', hospitalController.deactivateDoctor);
+router.put('/activateDoctor', hospitalController.activateDoctor);
 router.put('/deactivateReceptionist', hospitalController.deactivateReceptionist);
 router.put('/activateReceptionist', hospitalController.activateReceptionist);
 

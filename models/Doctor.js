@@ -54,7 +54,7 @@ const doctorSchema = new mongoose.Schema({
     },
     hospitalID: {
         type: mongoose.Types.ObjectId,
-        required: true,
+        //required: true,
     },
     currentFlowNumber: {
         type: Number,

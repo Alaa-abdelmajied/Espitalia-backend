@@ -41,14 +41,36 @@ module.exports.addDoctor = async (req, res) => {
 
 }
 
+/*
+FIXME: when hospital send request to deactivate a Doctor:
+    first, we search for the DoctorID and check if the hospitalID matches this.hospital
+    if everything is fine then remove hospitalID and make isActive = false
+*/
 module.exports.deactivateDoctor = async (req, res) => {
-    const { id } = req.body;
-    const doctor = await Doctor.findByIdAndUpdate(id, { isActive: false} );
+    const { hospitalID, DoctorID } = req.body;
+    const doctor = await Doctor.findById(DoctorID);
+    if(doctor.hospitalID != hospitalID) return res.status(400).send('bad request');
+    doctor.hospitalID = null;
+    doctor.isActive = false;
+    doctor.save();
+    res.send("Done");
 }
 
+/*
+FIXME: when hospital send request to activate a Doctor:
+    first, we should search for the doctor's ID. If the doctor is assigned to another hospital
+    (isActive = false) that's means he is available to be signed for this.hospital
+    if the doctor is already active and assigned for a hospital, do nothing or send a response as a bad req.body
+*/
 module.exports.activateDoctor = async (req, res) => {
-    const { id } = req.body;
-    const doctor = await Doctor.findByIdAndUpdate(id, { isActive: true} );
+    const { hospitalID, DoctorID } = req.body;
+    const doctor = await Doctor.findById(DoctorID);
+    if(doctor.isActive) return res.status(400).send("Doctor is not available");
+    doctor.isActive = true;
+    doctor.hospitalID = hospitalID;
+    doctor.save();
+    res.send("Done");
+    //, { isActive: true, hospitalID: hospitalID} 
 }
 
 module.exports.addReceptionist = async (req, res) => {
@@ -79,7 +101,7 @@ module.exports.viewReceptionists = async (req, res) => {
 }
 
 module.exports.deactivateReceptionist = async (req, res) => {
-
+    
 }
 
 module.exports.activateReceptionist = async (req, res) => {
