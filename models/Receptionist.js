@@ -24,7 +24,7 @@ const receptionistSchema = new mongoose.Schema({
     },
     hospitalID: {
         type: mongoose.Types.ObjectId,
-        required: [true, 'Please enter a hospital name']
+        //required: [true, 'Please enter a hospital name']
     },
     phoneNumber: {
         type: String,       // better as a string or number?
