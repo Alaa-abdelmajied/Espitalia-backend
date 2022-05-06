@@ -245,9 +245,10 @@ module.exports.patientSearchHospital = async (req, res) => {
 
 module.exports.getPatient = async (req, res) => {
   const { id } = req.body;
-  const patient = await Patient.find({ _id: id });
-  console.log(patient);
+  
   try {
+  const patient = await Patient.find({ _id: id });
+  //console.log(patient);
     res.send(patient);
   } catch (err) {
     res.status(400).send(err.message);
@@ -266,9 +267,9 @@ module.exports.getNotification = async (req, res) => {
 };
 
 module.exports.getBloodRequests = async (req, res) => {
-  const bloodRequests = await BloodRequests.find();
 
   try {
+    const bloodRequests = await BloodRequests.find();
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
       var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
