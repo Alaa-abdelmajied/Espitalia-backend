@@ -47,15 +47,22 @@ const hospitalSchema = new mongoose.Schema({
 });
 
 hospitalSchema.methods.generateAuthToken = function() {
-    //FIXME:
-    //  the private key should be an environment variable
+    /*
+    FIXME:
+        the private key should be an environment variable
+    */
     const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
     return token;
+}
+hospitalSchema.methods.decodeToken = function(token) {
+    const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+    return decodedToken;
 }
 
 hospitalSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt();
     this.password = await bcrypt.hash(this.password, salt);
+    console.log(this.password);
     next();
 });
 
@@ -63,6 +70,7 @@ hospitalSchema.statics.hospitalLogin = async function (email, password) {
     const hospital = await this.findOne({ email });
     if (hospital) {
         const validPassword = await bcrypt.compare(password, hospital.password);
+        console.log(password);
         if (validPassword) {
             return hospital;
         }

@@ -2,6 +2,7 @@ const Hospital = require('../models/Hospital');
 const _ = require('lodash');
 const Doctor = require('../models/Doctor');
 const Receptionist = require('../models/Receptionist');
+const jsonwebtoken = require('jsonwebtoken');
 
 
 
@@ -11,14 +12,22 @@ module.exports.Login = async (req, res) => {
     try {
         const hospital = await Hospital.hospitalLogin(email, password);
         const token = hospital.generateAuthToken();
-        res.send(token);
+        res.header('x-auth-token',token).send(token);
     }catch(e){
         res.status(400).send(e.message);
     }
 }
 
+/*
+TODO:
+    remove the token which is used to authenticate the user to perform his functionalities 
+*/
 module.exports.Logout = async (req, res) => {
-    
+    const { id } = req.body;
+    const token = req.header('x-auth-token');
+    const hospital = await Hospital.findById(id);
+    const decodedToken = hospital.decodeToken(token);
+    res.send(decodedToken);
 }
 
 module.exports.viewDoctors = async (req, res) => {
@@ -28,17 +37,33 @@ module.exports.viewDoctors = async (req, res) => {
     res.send(doctors);
 }
 
+/*
+TODO:
+    the doctors password is not hashed. we need to implement the hash-salt functions in the doctor's model
+*/
 module.exports.addDoctor = async (req, res) => {
     const { error } = Doctor.validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     
     let doctor = await Doctor.findOne({ email: req.body.email});
-    if (doctor) return res.status(400).send("Doctor is already exists");
-
-    doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'schedule', 'password', 'hospitalID', 'workingDays']));
-    await doctor.save();
-    res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
-
+    if (doctor){
+        if(!doctor.isActive){
+            doctor.schedule = req.body.schedule;
+            doctor.hospitalID = req.body.hospitalID;
+            doctor.workingDays = req.body.workingDays;
+            doctor.isActive = true;
+            doctor.save();
+            res.send(`${doctor} is already exists but we added it to your hospital`);
+            //res.send(doctor);
+        }
+        else{
+            return res.status(400).send(`${doctor} is already exists and not available`);
+        }
+    }else{
+        doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'schedule', 'password', 'hospitalID', 'workingDays']));
+        await doctor.save();
+        res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
+    }
 }
 
 /*
@@ -54,7 +79,7 @@ module.exports.activateDoctor = async (req, res) => {
     doctor.isActive = true;
     doctor.hospitalID = hospitalID;
     doctor.save();
-    res.send("Done");
+    res.send(`${doctor.name}'s account is activated and assigned to your hospital`);
     //, { isActive: true, hospitalID: hospitalID} 
 }
 
@@ -70,25 +95,35 @@ module.exports.deactivateDoctor = async (req, res) => {
     doctor.hospitalID = null;
     doctor.isActive = false;
     doctor.save();
-    res.send("Done");
+    res.send(`${doctor.name}'s account is deactivated and removed from your hospital`);
 }
 
-
+/*
+TODO:
+    the Receptionist password is not hashed. we need to implement the hash-salt functions in the Receptionist's model
+*/
 module.exports.addReceptionist = async (req, res) => {
-    const {name,username,email,password,hospitalID,phoneNumber,education,from,workingDays} = req.body;
-    const newReceptionist = await Receptionist.create({
-        name: name,
-        username: username,
-        email: email,
-        password: password,
-        hospitalID,
-        phoneNumber: phoneNumber,
-        education,
-        from: from,
-        workingDays: workingDays
-    });
-    if(!newReceptionist) return res.status(400).send("bad request");
-    res.send(newReceptionist);
+    //const { error } = Receptionist.validate(req.body);
+    //if(error) return res.status(400).send(error.details[0].message);
+    let receptionist = await Receptionist.findOne({email: req.body.email});
+    if(receptionist){
+        if(!receptionist.isActive){
+            receptionist.isActive = true;
+            receptionist.hospitalID = req.body.hospitalID;
+            receptionist.workingDays = req.body.workingDays;
+            receptionist.save();
+            res.send(`${receptionist.name} is activated and added to your hospital`);
+        }
+        else if(receptionist.hospitalID == req.body.hospitalID){
+            res.status(400).send(`${receptionist.name} is already working in your hospital`);
+        }else{
+            res.status(400).send(`${receptionist.name} is not available`);
+        }
+    }else{
+        receptionist = new Receptionist(_.pick(req.body, ['name', 'username', 'email', 'password', 'hospitalID', 'phoneNumber', 'education', 'from', 'workingDays']));
+        receptionist.save();
+        res.send(`${receptionist.name} is created and added to your hospital`);
+    }
 }
 
 module.exports.viewReceptionists = async (req, res) => {
