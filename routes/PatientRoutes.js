@@ -28,7 +28,10 @@ router.post('/rate', patientController.rateDoctor);
 router.post('/book', patientController.book);
 router.get('/report', patientController.selectReport);
 router.get('/homepage', patientController.displayHomepage);
-router.get('/seeMore', patientController.seeMore);
+// router.get('/seeMore', patientController.seeMore);
+router.get('/allDoctors', patientController.seeAllDoctors);
+router.get('/allHospitals', patientController.seeAllHospitals);
+
 router.get('/oldAppointment', patientController.oldAppointments);
 router.get('/upcomingAppointment', patientController.upcomingAppointments);
 // router.get('/getPatient', patientController.getPatient);

@@ -245,10 +245,10 @@ module.exports.patientSearchHospital = async (req, res) => {
 
 module.exports.getPatient = async (req, res) => {
   const { id } = req.body;
-  
+
   try {
-  const patient = await Patient.find({ _id: id });
-  //console.log(patient);
+    const patient = await Patient.find({ _id: id });
+    //console.log(patient);
     res.send(patient);
   } catch (err) {
     res.status(400).send(err.message);
@@ -267,7 +267,6 @@ module.exports.getNotification = async (req, res) => {
 };
 
 module.exports.getBloodRequests = async (req, res) => {
-
   try {
     const bloodRequests = await BloodRequests.find();
     var requests = [];
@@ -337,16 +336,41 @@ module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
 
 //Display Homepage
 module.exports.displayHomepage = async (req, res) => {
+  var homepageData = [];
+  const dataSize = 5;
+
   try {
     const doctor = await Doctor.aggregate([
-      { $project: { _id: 0, name: 1, specialization: 1, rating: 1 } },
-      { $sample: { size: 5 } },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          specialization: 1,
+          rating: 1,
+          hospitalID: 1,
+        },
+      },
+      { $sample: { size: dataSize } },
     ]);
+
     const hospital = await Hospital.aggregate([
-      { $project: { _id: 0, name: 1, address: 1 } },
-      { $sample: { size: 5 } },
+      { $project: { _id: 1, name: 1, address: 1 } },
+      { $sample: { size: dataSize } },
     ]);
-    const homepageData = [doctor, hospital];
+
+    for (var i = 0; i < dataSize; i++) {
+      const doctorHospitalData = await Hospital.findById(doctor[i].hospitalID);
+      homepageData.push({
+        hospitalID: hospital[i]._id,
+        hospitalName: hospital[i].name,
+        hospitalAddress: hospital[i].address,
+        drID: doctor[i]._id,
+        drName: doctor[i].name,
+        speciality: doctor[i].specialization,
+        doctorHospitalName: doctorHospitalData.name,
+        doctorHospitalAddress: doctorHospitalData.address,
+      });
+    }
     res.status(200).send(homepageData);
   } catch (err) {
     res.status(400).send(err.message);
@@ -354,22 +378,79 @@ module.exports.displayHomepage = async (req, res) => {
 };
 
 //See More
-module.exports.seeMore = async (req, res) => {
+/*module.exports.seeMore = async (req, res) => {
+  var homepage = [];
   try {
     const doctorData = await Doctor.find().select({
+      _id: 1,
       name: 1,
       specialization: 1,
       rating: 1,
-      _id: 0,
     });
     const hospitalData = await Hospital.find().select({
+      _id: 1,
       name: 1,
       address: 1,
-      _id: 0,
     });
-    const homepageData = [doctorData, hospitalData];
-    res.status(200).send(homepageData);
-  } catch {
+
+    for (var i = 0; i < doctorData.length; i++) {
+      homepage.push({
+        dID: doctorData[i]._id,
+        drName: doctorData[i].name,
+        speciality: doctorData[i].specialization,
+      });
+    }
+
+    for (var i = 0; i < hospitalData.length; i++) {
+      homepage.push({
+        hID: hospitalData[i]._id,
+        hName: hospitalData[i].name,
+        address: hospitalData[i].address,
+      });
+    }
+
+    // const homepageData = [doctorData, hospitalData];
+    res.status(200).send(homepage);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};*/
+
+module.exports.seeAllDoctors = async (req, res) => {
+  var allDoctors = [];
+  try {
+    const doctorData = await Doctor.find();
+    for (var i = 0; i < doctorData.length; i++) {
+      const doctorHospitalData = await Hospital.findById(doctorData[i].hospitalID);
+      allDoctors.push({
+        drID: doctorData[i]._id,
+        drName: doctorData[i].name,
+        speciality: doctorData[i].specialization,
+        doctorHospitalName: doctorHospitalData.name,
+        doctorHospitalAddress: doctorHospitalData.address,
+      });
+    }
+
+    res.status(200).send(allDoctors);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.seeAllHospitals = async (req, res) => {
+  var allHospitals = [];
+  try {
+    const hospitalData = await Hospital.find();
+    for (var i = 0; i < hospitalData.length; i++) {
+      allHospitals.push({
+        hospitalID: hospitalData[i]._id,
+        hospitalName: hospitalData[i].name,
+        address: hospitalData[i].address,
+      });
+    }
+
+    res.status(200).send(allHospitals);
+  } catch (err) {
     res.status(400).send(err.message);
   }
 };
