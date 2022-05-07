@@ -1,10 +1,23 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
+const jsonwebtoken = require('jsonwebtoken');
 
-// mongoose.connect('mongodb://localhost/EspitaliaDB')
-//     .then(() => console.log('Connected.'))
-//     .catch(err => console.log('Error:', err));
+/*
+TODO: 
+    install config module, make a config folder and make default.json and custom-environment-variables.json
+    in default.json:
+        {
+            "jwtPrivateKey": ""
+        }
+    in custom-environment-variables.json:
+        {
+            "jwtPrivateKey": "Esbitalia_jwtPrivateKey"
+        }
+    then,
+    replace the "PrivateKey" in jwt.sign() with config.get('jwtPrivateKey')
+    and don't forget to set the environment variable
+*/
 
 const hospitalSchema = new mongoose.Schema({
     email: {
@@ -36,9 +49,24 @@ const hospitalSchema = new mongoose.Schema({
     }]
 });
 
+hospitalSchema.methods.generateAuthToken = function() {
+    /*
+    FIXME:
+        the private key should be an environment variable
+    */
+    const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
+    return token;
+}
+
+hospitalSchema.methods.decodeToken = function(token) {
+    const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+    return decodedToken;
+}
+
 hospitalSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt();
     this.password = await bcrypt.hash(this.password, salt);
+    console.log(this.password);
     next();
 });
 
@@ -46,6 +74,7 @@ hospitalSchema.statics.hospitalLogin = async function (email, password) {
     const hospital = await this.findOne({ email });
     if (hospital) {
         const validPassword = await bcrypt.compare(password, hospital.password);
+        //console.log(password);
         if (validPassword) {
             return hospital;
         }
@@ -69,5 +98,15 @@ hospitalSchema.statics.changePassword = async function (email, oldPassword, newP
 }
 
 const Hospital = mongoose.model('hospital', hospitalSchema);
+
+function validateHospital(hospital) {
+    const schema = {
+        name: Joi.string().min(3).max(255).require(),
+        email: Joi.string().min(3).max(255).email().require(),
+        password: Joi.string().min(8).max(250).password().require(),
+        address: Joi.string().min(3).max(255).require(),
+    };
+    return Joi.validate(hospital,schema);
+}
 
 module.exports = Hospital;
