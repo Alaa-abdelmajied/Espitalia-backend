@@ -3,18 +3,21 @@ const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jsonwebtoken = require('jsonwebtoken');
 
-// TODO: install config module, make a config folder and make default.json and custom-environment-variables.json
-// in default.json:
-//      {
-//          "jwtPrivateKey": ""
-//      }
-// in custom-environment-variables.json:
-//      {
-//          "jwtPrivateKey": "Esbitalia_jwtPrivateKey"
-//      }
-//then,
-//  replace the "PrivateKey" in jwt.sign() with config.get('jwtPrivateKey')
-//and don't forget to set the environment variable
+/*
+TODO: 
+    install config module, make a config folder and make default.json and custom-environment-variables.json
+    in default.json:
+        {
+            "jwtPrivateKey": ""
+        }
+    in custom-environment-variables.json:
+        {
+            "jwtPrivateKey": "Esbitalia_jwtPrivateKey"
+        }
+    then,
+    replace the "PrivateKey" in jwt.sign() with config.get('jwtPrivateKey')
+    and don't forget to set the environment variable
+*/
 
 const hospitalSchema = new mongoose.Schema({
     email: {
@@ -54,6 +57,7 @@ hospitalSchema.methods.generateAuthToken = function() {
     const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
     return token;
 }
+
 hospitalSchema.methods.decodeToken = function(token) {
     const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
     return decodedToken;
@@ -70,7 +74,7 @@ hospitalSchema.statics.hospitalLogin = async function (email, password) {
     const hospital = await this.findOne({ email });
     if (hospital) {
         const validPassword = await bcrypt.compare(password, hospital.password);
-        console.log(password);
+        //console.log(password);
         if (validPassword) {
             return hospital;
         }

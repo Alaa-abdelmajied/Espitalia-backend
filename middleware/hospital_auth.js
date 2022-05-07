@@ -6,10 +6,9 @@ module.exports = function validateToken(req, res, next) {
     try{
         const decoded = jsonwebtoken.verify(token, "PrivateKey");
         req.hospital = decoded;
-        console.log(req.hospital);
+        //console.log(req.hospital);
         next();
     }catch(error) {
         res.status(400).send(`Invalid token`);
     }
-    
 }

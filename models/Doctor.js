@@ -44,7 +44,8 @@ const doctorSchema = new mongoose.Schema({
     },
     schedule: {
         type: [scheduleSchema],
-        required: true,
+        //FIXME: return me required again
+        //required: true,
         lowercase: true
     },
     password: {
