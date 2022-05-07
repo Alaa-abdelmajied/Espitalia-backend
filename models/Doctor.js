@@ -69,5 +69,9 @@ const doctorSchema = new mongoose.Schema({
 })
 
 const Doctor = mongoose.model('doctor', doctorSchema);
+const Schedule = mongoose.model('Schedule',scheduleSchema);
 
-module.exports = Doctor;
+module.exports={
+    Doctor:Doctor,
+    Schedule:Schedule
+}
