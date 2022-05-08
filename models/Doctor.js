@@ -1,3 +1,4 @@
+const Joi = require('joi');
 const mongoose = require('mongoose');
 const { isEmail } = require('validator');
 
@@ -43,7 +44,8 @@ const doctorSchema = new mongoose.Schema({
     },
     schedule: {
         type: [scheduleSchema],
-        required: true,
+        //FIXME: return me required again
+        //required: true,
         lowercase: true
     },
     password: {
@@ -53,7 +55,7 @@ const doctorSchema = new mongoose.Schema({
     },
     hospitalID: {
         type: mongoose.Types.ObjectId,
-        required: true,
+        //required: true,
     },
     currentFlowNumber: {
         type: Number,
@@ -66,7 +68,21 @@ const doctorSchema = new mongoose.Schema({
             from: String
         }]
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 })
+
+function validate(doctor) {
+    const schema = {
+        name: Joi.string().min(3).max(255).required(),
+        userName: Joi.string().min(3).max(255).required(),
+        email: Joi.string().min(3).max(255).email().required(),
+        specialization: Joid.string().min(3).max(255).required(),
+    }
+    return Joi.validate(doctor, schema);
+}
 
 const Doctor = mongoose.model('doctor', doctorSchema);
 const Schedule = mongoose.model('Schedule',scheduleSchema);
