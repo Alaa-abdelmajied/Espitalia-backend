@@ -35,6 +35,6 @@ router.get('/upcomingAppointment', patientController.upcomingAppointments);
 router.get('/getNotification', patientController.getNotification);
 router.post('/review', patientController.reviewDoctor);
 // router.get('/getBloodRequests', patientController.getBloodRequests);
-router.get('/currentFlowNumber',patientController.getFlowOfEntrance);
+router.get('/currentFlowNumber/:id',patientController.getFlowOfEntrance);
 
 module.exports = router;

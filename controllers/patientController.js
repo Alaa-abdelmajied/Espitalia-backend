@@ -92,7 +92,7 @@ module.exports.patientLogin = async (req, res) => {
             res.status(200).send({ verified: patient.verified, token })
         }
     } catch (err) {
-        res.status(400).send(err.message);
+        res.status(404).send(err.message);
     }
 }
 
@@ -130,6 +130,16 @@ module.exports.verifyAccount = async (req, res) => {
         res.status(400).send(err.message);
     }
 }
+
+// module.exports.resendOtp = async (req, res) => {
+//     const { token } = req.body;
+//     try {
+//         const decodedToken = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+//         sendOtp(patient.id, patient.name, patient.email);
+//     } catch (err) {
+//         res.status(400).send(err.message);
+//     }
+// }
 
 module.exports.patientChangePassword = async (req, res) => {
     const { oldPassword, newPassword, token } = req.body;
@@ -437,10 +447,10 @@ module.exports.book = async (req, res) => {
 }
 
 module.exports.getFlowOfEntrance = async (req, res) => {
-    const { doctorId } = req.body;
+    const { id } = req.params;
     try {
-        const {currentFlowNumber} = await Doctor.findOne({_id:doctorId});
-        res.status(200).send({currentFlowNumber});
+        const { currentFlowNumber } = await Doctor.findOne({ _id: id });
+        res.status(200).send({ currentFlowNumber });
     } catch (err) {
         res.status(400).send(err.message);
     }
