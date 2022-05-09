@@ -54,7 +54,7 @@ router.get("/upcomingAppointment/:id", patientController.upcomingAppointments);
 router.get("/getPatient", patientController.getPatient);
 router.get("/getNotification", patientController.getNotification);
 router.get("/getBloodRequests", patientController.getBloodRequests);
-router.get("/currentFlowNumber", patientController.getFlowOfEntrance);
+router.get('/currentFlowNumber/:id',patientController.getFlowOfEntrance);
 
 //DELETE Routes
 router.delete("/cancel", patientController.cancelAppointment);

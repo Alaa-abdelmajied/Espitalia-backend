@@ -1,8 +1,10 @@
 const Hospital = require('../models/Hospital');
 const _ = require('lodash');
-const Doctor = require('../models/Doctor');
+const { Doctor, Schedule } = require('../models/Doctor');
 const Receptionist = require('../models/Receptionist');
 const jsonwebtoken = require('jsonwebtoken');
+const date = require('date-and-time');
+
 
 /*
 DONE:
@@ -59,16 +61,17 @@ module.exports.addDoctor = async (req, res) => {
     const { error } = Doctor.validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     //console.log(`ID: ${req.hospital._id}`);
-
+    //console.log(req.body.email);
     let doctor = await Doctor.findOne({ email: req.body.email });
+    //console.log({doctor});
     if (doctor) {
         if (!doctor.isActive) {
             doctor.isActive = true;
-            doctor.schedule = req.body.schedule;
-            //doctor.hospitalID = req.body.hospitalID;
+            doctor.schedule = GenerateSchedule(req.body.workingDays);
             doctor.hospitalID = req.hospital._id;
             doctor.workingDays = req.body.workingDays;
             doctor.save();
+            //console.log({doctor});
             res.send(`${doctor} is already exists but we added it to your hospital`);
             //res.send(doctor);
         }
@@ -79,6 +82,8 @@ module.exports.addDoctor = async (req, res) => {
     } else {
         doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'password', 'workingDays']));
         doctor.hospitalID = req.hospital._id;
+        //console.log({doctor});
+        doctor.schedule = GenerateSchedule(req.body.workingDays);
         await doctor.save();
         res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
     }
@@ -208,4 +213,35 @@ module.exports.activateReceptionist = async (req, res) => {
     receptionist.save();
     res.send(`${receptionist.name} is added to your hospital`);
 
+}
+
+function GenerateSchedule(workingdays) {
+    let counter = 1;
+    let NewSchedule = [];
+
+    let datenow = new Date(Date.now());
+    let dateItr = date.addDays(datenow, counter);
+    let newDateForm = date.format(dateItr, 'ddd, MMM DD YYYY');
+    let dayName = newDateForm.split(",");
+    var nextDay = dateItr ;
+
+    while (counter < 15) {
+        for (var i = 0; i < workingdays.length; i++) {
+            if (dayName[0] == workingdays[i].day) {
+                addedSchedule = new Schedule({
+                    date: nextDay,   //2022-09-24
+                    to: workingdays[i].to,
+                    from: workingdays[i].from,
+                    AppointmentList: [],
+                });
+                NewSchedule.push(addedSchedule);
+            }
+        }
+        nextDay = date.addDays(datenow, counter);
+        var nextDayII = date.format(nextDay, 'ddd, MMM DD YYYY');
+        nextDayName = nextDayII.split(",");
+        dayName = nextDayName;
+        counter++;
+    }
+    return NewSchedule;
 }

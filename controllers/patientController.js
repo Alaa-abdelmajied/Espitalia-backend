@@ -88,18 +88,21 @@ module.exports.patientSignup = async (req, res) => {
 };
 
 module.exports.patientLogin = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const patient = await Patient.patientLogin(email, password);
-    const token = createToken(patient.id);
-    if (!patient.verified) {
-      sendOtp(patient.id, patient.name, patient.email);
-      res.status(200).send({ verified: patient.verified, token });
-    } else {
-      await Patient.updateOne(patient, {
-        loggedIn: true,
-      });
-      res.status(200).send({ verified: patient.verified, token });
+    const { email, password } = req.body;
+    try {
+        const patient = await Patient.patientLogin(email, password);
+        const token = createToken(patient.id);
+        if (!patient.verified) {
+            sendOtp(patient.id, patient.name, patient.email);
+            res.status(200).send({ verified: patient.verified, token })
+        } else {
+            await Patient.updateOne(patient, {
+                loggedIn: true
+            });
+            res.status(200).send({ verified: patient.verified, token })
+        }
+    } catch (err) {
+        res.status(404).send(err.message);
     }
   } catch (err) {
     res.status(400).send(err.message);
@@ -154,6 +157,16 @@ module.exports.verifyAccount = async (req, res) => {
     res.status(400).send(err.message);
   }
 };
+
+// module.exports.resendOtp = async (req, res) => {
+//     const { token } = req.body;
+//     try {
+//         const decodedToken = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
+//         sendOtp(patient.id, patient.name, patient.email);
+//     } catch (err) {
+//         res.status(400).send(err.message);
+//     }
+// }
 
 module.exports.patientChangePassword = async (req, res) => {
   const { oldPassword, newPassword, token } = req.body;
@@ -703,6 +716,14 @@ module.exports.getFlowOfEntrance = async (req, res) => {
     res.status(400).send(err.message);
   }
 };
+  
+module.exports.getFlowOfEntrance = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { currentFlowNumber } = await Doctor.findOne({ _id: id });
+        res.status(200).send({ currentFlowNumber });
+    } catch (err) {
+        res.status(400).send(err.message);
 
 //function to update db scheudles most probably it will be moved to dr controller
 //var intervalID = setInterval(myCallback, 5000);
@@ -725,7 +746,7 @@ async function myCallback() {
         newSchedule.push(schedule);
       }
     }
-
+    
     if (flag) {
       //last day in schudles
       let length = dr.schedule.length;
