@@ -35,8 +35,8 @@ router.get('/upcomingAppointment', patientController.upcomingAppointments);
 router.get('/getPatient', patientController.getPatient);
 router.get('/getNotification', patientController.getNotification);
 router.post('/review', patientController.reviewDoctor);
+router.get('/currentFlowNumber/:id',patientController.getFlowOfEntrance);
 router.get('/getBloodRequests', patientController.getBloodRequests);
-router.get('/currentFlowNumber', patientController.getFlowOfEntrance);
 router.delete('/cancel', patientController.cancelAppointment);
 
 module.exports = router;
