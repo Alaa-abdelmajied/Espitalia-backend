@@ -216,48 +216,32 @@ module.exports.activateReceptionist = async (req, res) => {
 }
 
 function GenerateSchedule(workingdays) {
-    //const { id } = req.body;
-    // try {
+    let counter = 1;
+    let NewSchedule = [];
 
-        // const doctor = await Doctor.find({ _id: id });
-         let datenow = new Date(Date.now());
-        //let d = date
-         let newDateForm = date.format(datenow, 'ddd, MMM DD YYYY');
-        // console.log({newDateForm});
-         let dayName = newDateForm.split(",");
+    let datenow = new Date(Date.now());
+    let dateItr = date.addDays(datenow, counter);
+    let newDateForm = date.format(dateItr, 'ddd, MMM DD YYYY');
+    let dayName = newDateForm.split(",");
+    var nextDay = dateItr ;
 
-
-        // const workingdays = doctor[0].workingDays;
-        let NewSchedule = [];
-
-        let counter = 0;
-        var nextDay;
-        while (counter < 15) {
-            for (var i=0; i < workingdays.length; i++) {
-                if (dayName[0] == workingdays[i].day) {
-                    
-                    addedSchedule = new Schedule({
-                        date: nextDay,   //2022-09-24
-                        to: workingdays[i].to,
-                        from: workingdays[i].from,
-                        AppointmentList: [],
-                    });
-                    NewSchedule.push(addedSchedule);
-                }
-                
-                
-                nextDay=date.addDays(datenow,counter);
-                var nextDayII=date.format(nextDay, 'ddd, MMM DD YYYY');
-                nextDayName=nextDayII.split(",");
-                dayName=nextDayName;
-            } 
-            counter++;
+    while (counter < 15) {
+        for (var i = 0; i < workingdays.length; i++) {
+            if (dayName[0] == workingdays[i].day) {
+                addedSchedule = new Schedule({
+                    date: nextDay,   //2022-09-24
+                    to: workingdays[i].to,
+                    from: workingdays[i].from,
+                    AppointmentList: [],
+                });
+                NewSchedule.push(addedSchedule);
+            }
         }
-        //console.log(NewSchedule);
-        return NewSchedule;
-        // res.send(doctor);
-    // }
-    // catch (err) {
-    //     res.status(400).send(err.message);
-    // }
+        nextDay = date.addDays(datenow, counter);
+        var nextDayII = date.format(nextDay, 'ddd, MMM DD YYYY');
+        nextDayName = nextDayII.split(",");
+        dayName = nextDayName;
+        counter++;
+    }
+    return NewSchedule;
 }
