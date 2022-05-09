@@ -1,8 +1,10 @@
 const Hospital = require('../models/Hospital');
 const _ = require('lodash');
-const Doctor = require('../models/Doctor');
+const { Doctor, Schedule } = require('../models/Doctor');
 const Receptionist = require('../models/Receptionist');
 const jsonwebtoken = require('jsonwebtoken');
+const date = require('date-and-time');
+
 
 /*
 DONE:
@@ -59,16 +61,17 @@ module.exports.addDoctor = async (req, res) => {
     const { error } = Doctor.validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     //console.log(`ID: ${req.hospital._id}`);
-
+    //console.log(req.body.email);
     let doctor = await Doctor.findOne({ email: req.body.email });
+    //console.log({doctor});
     if (doctor) {
         if (!doctor.isActive) {
             doctor.isActive = true;
             doctor.schedule = GenerateSchedule(req.body.workingDays);
-            //doctor.hospitalID = req.body.hospitalID;
             doctor.hospitalID = req.hospital._id;
             doctor.workingDays = req.body.workingDays;
             doctor.save();
+            //console.log({doctor});
             res.send(`${doctor} is already exists but we added it to your hospital`);
             //res.send(doctor);
         }
@@ -79,6 +82,8 @@ module.exports.addDoctor = async (req, res) => {
     } else {
         doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'password', 'workingDays']));
         doctor.hospitalID = req.hospital._id;
+        //console.log({doctor});
+        doctor.schedule = GenerateSchedule(req.body.workingDays);
         await doctor.save();
         res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
     }
@@ -210,16 +215,16 @@ module.exports.activateReceptionist = async (req, res) => {
 
 }
 
-async function GenerateSchedule(workingdays) {
+function GenerateSchedule(workingdays) {
     //const { id } = req.body;
     // try {
 
         // const doctor = await Doctor.find({ _id: id });
-        // let datenow = new Date(Date.now());
-
-        // let newDateForm = date.format(datenow, 'ddd, MMM DD YYYY');
+         let datenow = new Date(Date.now());
+        //let d = date
+         let newDateForm = date.format(datenow, 'ddd, MMM DD YYYY');
         // console.log({newDateForm});
-        // let dayName = newDateForm.split(",");
+         let dayName = newDateForm.split(",");
 
 
         // const workingdays = doctor[0].workingDays;
@@ -248,7 +253,7 @@ async function GenerateSchedule(workingdays) {
             } 
             counter++;
         }
-        console.log(NewSchedule);
+        //console.log(NewSchedule);
         return NewSchedule;
         // res.send(doctor);
     // }
