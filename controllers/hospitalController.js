@@ -64,7 +64,7 @@ module.exports.addDoctor = async (req, res) => {
     if (doctor) {
         if (!doctor.isActive) {
             doctor.isActive = true;
-            doctor.schedule = req.body.schedule;
+            doctor.schedule = GenerateSchedule(req.body.workingDays);
             //doctor.hospitalID = req.body.hospitalID;
             doctor.hospitalID = req.hospital._id;
             doctor.workingDays = req.body.workingDays;
@@ -249,6 +249,7 @@ async function GenerateSchedule(workingdays) {
             counter++;
         }
         console.log(NewSchedule);
+        return NewSchedule;
         // res.send(doctor);
     // }
     // catch (err) {
