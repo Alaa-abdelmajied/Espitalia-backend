@@ -209,3 +209,49 @@ module.exports.activateReceptionist = async (req, res) => {
     res.send(`${receptionist.name} is added to your hospital`);
 
 }
+
+async function GenerateSchedule(workingdays) {
+    //const { id } = req.body;
+    // try {
+
+        // const doctor = await Doctor.find({ _id: id });
+        // let datenow = new Date(Date.now());
+
+        // let newDateForm = date.format(datenow, 'ddd, MMM DD YYYY');
+        // console.log({newDateForm});
+        // let dayName = newDateForm.split(",");
+
+
+        // const workingdays = doctor[0].workingDays;
+        let NewSchedule = [];
+
+        let counter = 0;
+        var nextDay;
+        while (counter < 15) {
+            for (var i=0; i < workingdays.length; i++) {
+                if (dayName[0] == workingdays[i].day) {
+                    
+                    addedSchedule = new Schedule({
+                        date: nextDay,   //2022-09-24
+                        to: workingdays[i].to,
+                        from: workingdays[i].from,
+                        AppointmentList: [],
+                    });
+                    NewSchedule.push(addedSchedule);
+                }
+                
+                
+                nextDay=date.addDays(datenow,counter);
+                var nextDayII=date.format(nextDay, 'ddd, MMM DD YYYY');
+                nextDayName=nextDayII.split(",");
+                dayName=nextDayName;
+            } 
+            counter++;
+        }
+        console.log(NewSchedule);
+        // res.send(doctor);
+    // }
+    // catch (err) {
+    //     res.status(400).send(err.message);
+    // }
+}
