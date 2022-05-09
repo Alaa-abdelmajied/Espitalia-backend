@@ -12,11 +12,15 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.0.1",
-    "express": "^4.17.3",
+    "config": "^3.3.7",
+    "date-and-time": "^2.3.1",
+    "express": "^4.18.0",
+    "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.21",
     "mongoose": "^6.2.9",
     "nodemailer": "^6.7.3",
-    "nodemon": "^2.0.15",
+    "nodemon": "^2.0.16",
     "otp-generator": "^4.0.0",
     "validator": "^13.7.0"
   }

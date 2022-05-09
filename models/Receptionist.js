@@ -24,10 +24,10 @@ const receptionistSchema = new mongoose.Schema({
     },
     hospitalID: {
         type: mongoose.Types.ObjectId,
-        required: [true, 'Please enter a hospital name']
+        //required: [true, 'Please enter a hospital name']
     },
     phoneNumber: {
-        type: Number,       // better as a string or number?
+        type: String,       // better as a string or number?
         required: [true, 'Please enter a valid phone number'],
         minlength: [11, 'Minimum phone number length is 11']
     },
@@ -45,6 +45,10 @@ const receptionistSchema = new mongoose.Schema({
             from: String
         }]
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 
 });
 
@@ -68,6 +72,6 @@ async function createReceptionist() {
     console.log(result);
 }
 
-createReceptionist();
+//createReceptionist();
 
 module.exports = Receptionist;

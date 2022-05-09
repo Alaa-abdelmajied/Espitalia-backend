@@ -1,22 +1,17 @@
 const express = require('express');
-const mongoose = require('mongoose');
-mongoose.Promise = global.Promise;
 
-const patientRouters = require('./routes/PatientRoutes')
+// if(!config.get('jwtPrivateKey')){
+//     console.log("FATAL ERROR: jwtPrivateKey not found");
+//     process.exit(1);
+// }
+const patientRouters = require('./routes/PatientRoutes');
+const hospitalRouters = require('./routes/HospitalRoutes');
 
 const app = express();
+
+
+
 app.use(express.json());
-
-const dbURI = 'mongodb+srv://Alaa:FpX3KihZBF5jaCV@espitaliacluster.ozn3j.mongodb.net/espitaliaDb?retryWrites=true&w=majority';
-mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
-.then((result) => {
-    console.log('Server Connected!');
-    app.listen(3000);
-})
-.catch((err) => console.log(err));
-const conn = mongoose.connection;
-conn.on('error', () => console.error.bind(console, 'connection error'));
-conn.once('open', () => console.info('Connection to Database is successful'));
-module.exports = conn;
-
+app.listen(3000);
 app.use('/patient', patientRouters);
+app.use('/hospital', hospitalRouters);
