@@ -49,10 +49,10 @@ router.get("/homepage", patientController.displayHomepage);
 // router.get('/seeMore', patientController.seeMore);
 router.get("/allDoctors", patientController.seeAllDoctors);
 router.get("/allHospitals", patientController.seeAllHospitals);
-router.get("/oldAppointment/:id", patientController.oldAppointments);
-router.get("/upcomingAppointment/:id", patientController.upcomingAppointments);
-router.get("/getPatient", patientController.getPatient);
-router.get("/getNotification", patientController.getNotification);
+router.get("/oldAppointment/:token", patientController.oldAppointments);
+router.get("/upcomingAppointment/:token", patientController.upcomingAppointments);
+router.get("/getPatient/:token", patientController.getPatient);
+router.get("/getNotification/:token", patientController.getNotification);
 router.get("/getBloodRequests", patientController.getBloodRequests);
 router.get('/currentFlowNumber/:id',patientController.getFlowOfEntrance);
 

@@ -15,10 +15,16 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 const date = require("date-and-time");
+require('dotenv').config()
+
 
 const createToken = (id) => {
-  return jwt.sign({ id }, "Grad_Proj.Espitalia#SecRet.Application@30132825275");
+  return jwt.sign({ id }, process.env.Token_Secret);
 };
+
+const decodeToken = (token) => {
+  return jwt.verify(token, process.env.Token_Secret).id;
+}
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -109,12 +115,9 @@ module.exports.patientLogin = async (req, res) => {
 module.exports.patientLogout = async (req, res) => {
   const { token } = req.body;
   try {
-    const decodedToken = jwt.verify(
-      token,
-      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
-    );
+    const patientId = decodeToken(token);
     await Patient.updateOne(
-      { _id: decodedToken.id },
+      { _id: patientId },
       {
         loggedIn: false,
       }
@@ -128,12 +131,9 @@ module.exports.patientLogout = async (req, res) => {
 module.exports.verifyAccount = async (req, res) => {
   const { otp, token, forgot } = req.body;
   try {
-    const decodedToken = jwt.verify(
-      token,
-      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
-    );
+    const patientId = decodeToken(token);
     const waitingVerfication = await WaitingVerfication.findOne({
-      patient: decodedToken.id,
+      patient: patientId,
     });
     if (otp == waitingVerfication.otp) {
       if (!forgot) {
@@ -168,12 +168,9 @@ module.exports.verifyAccount = async (req, res) => {
 module.exports.patientChangePassword = async (req, res) => {
   const { oldPassword, newPassword, token } = req.body;
   try {
-    const decodedToken = jwt.verify(
-      token,
-      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
-    );
+    const patientId = decodeToken(token);
     const result = await Patient.changePassword(
-      decodedToken.id,
+      patientId,
       oldPassword,
       newPassword
     );
@@ -202,11 +199,8 @@ module.exports.patientForgotPassword = async (req, res) => {
 module.exports.patientForgotPasswordChange = async (req, res) => {
   const { newPassword, token } = req.body;
   try {
-    const decodedToken = jwt.verify(
-      token,
-      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
-    );
-    const result = await Patient.forgotPassword(decodedToken.id, newPassword);
+    const patientId = decodeToken(token);
+    const result = await Patient.forgotPassword(patientId, newPassword);
     res.status(200).send(result);
   } catch (err) {
     res.status(400).send(err.message);
@@ -254,9 +248,10 @@ module.exports.patientSearchHospital = async (req, res) => {
 };
 
 module.exports.getPatient = async (req, res) => {
-  const { id } = req.body;
+  const token = req.params.token;
 
   try {
+    const id = decodeToken(token);
     const patient = await Patient.find({ _id: id });
     //console.log(patient);
     res.send(patient);
@@ -266,8 +261,9 @@ module.exports.getPatient = async (req, res) => {
 };
 
 module.exports.getNotification = async (req, res) => {
+  const token = req.params.token;
   try {
-    const id = req.body;
+    const id = decodeToken(token);
     const notification = await Notifications.find({ userID: id });
     console.log(notification);
     res.send(notification);
@@ -473,12 +469,10 @@ module.exports.selectReport = async (req, res) => {
 
 //Old Appointments
 module.exports.oldAppointments = async (req, res) => {
-  const token = req.params.id;
+  const token = req.params.token;
   try {
-    const { id } = jwt.verify(
-      token,
-      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
-    );
+    const id = decodeToken(token);
+
     const { oldAppointments } = await Patient.findById(id);
     var appointmentDetails = [];
     for (var i = 0; i < oldAppointments.length; i++) {
@@ -505,12 +499,10 @@ module.exports.oldAppointments = async (req, res) => {
 
 //Upcoming appointments
 module.exports.upcomingAppointments = async (req, res) => {
-  const token = req.params.id;
+  const token = req.params.token;
   try {
-    const { id } = jwt.verify(
-      token,
-      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
-    );
+    const id = decodeToken(token);
+
     const { newAppointments } = await Patient.findById(id);
     var appointmentDetails = [];
     for (var i = 0; i < newAppointments.length; i++) {
@@ -559,11 +551,8 @@ module.exports.editProfile = async (req, res) => {
 module.exports.rateDoctor = async (req, res) => {
   const { token, doctorId, rate } = req.body;
   try {
-    const decodedToken = jwt.verify(
-      token,
-      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
-    );
-    const { name } = await Patient.findOne({ _id: decodedToken.id });
+    const patientId = decodeToken(token);
+    const { name } = await Patient.findOne({ _id: patientId });
     const doctor = await Doctor.findOne({ _id: doctorId });
     const numberOfReviews = doctor.workingDays.length;
     const newRate =
@@ -576,8 +565,9 @@ module.exports.rateDoctor = async (req, res) => {
 
 //Review dr
 module.exports.reviewDoctor = async (req, res) => {
-  const { review, doctorID, userID } = req.body;
+  const { review, doctorID, token } = req.body;
   try {
+    const userID = decodeToken(token);
     const { name } = await Patient.findOne({ _id: userID });
     await Doctor.findByIdAndUpdate(
       { _id: doctorID },
@@ -601,8 +591,7 @@ module.exports.reviewDoctor = async (req, res) => {
 };
 
 module.exports.book = async (req, res) => {
-  const { userId, drId, date, from, to } = req.body;
-
+  const { token, drId, date, from, to } = req.body;
   const doctor = await Doctor.findById(drId);
 
   const hospitalId = doctor.hospitalID;
@@ -621,6 +610,7 @@ module.exports.book = async (req, res) => {
   const flowNumber = obj.AppointmentList.length + 1;
 
   try {
+    const userId = decodeToken(token);
     const session = await conn.startSession();
     await session.withTransaction(async () => {
       const appointment = await Appointment.create(
