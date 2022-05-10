@@ -549,9 +549,12 @@ module.exports.rateDoctor = async (req, res) => {
     );
     const { name } = await Patient.findOne({ _id: decodedToken.id });
     const doctor = await Doctor.findOne({ _id: doctorId });
-    const numberOfReviews = doctor.workingDays.length;
+    const numberOfReviews = doctor.reviews.length;
     const newRate =
       (doctor.rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
+    await Doctor.updateOne(doctor, {
+      rating: newRate
+    });
     res.status(200).send({ newRate, name });
   } catch (err) {
     res.status(400).send(err.message);
