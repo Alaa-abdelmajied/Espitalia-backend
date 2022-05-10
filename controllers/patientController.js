@@ -447,16 +447,14 @@ module.exports.selectReport = async (req, res) => {
     const hospitalData = await Hospital.findById(hospital);
     const d =
       date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
-    const appointmentDetails = [
-      {
-        hospitalName: hospitalData.name,
-        drName: doctorData.name,
-        specialization: doctorData.specialization,
-        date: d,
-        diagnosis: report,
-        prescription: prescription,
-      },
-    ];
+    const appointmentDetails = {
+      hospitalName: hospitalData.name,
+      drName: doctorData.name,
+      specialization: doctorData.specialization,
+      date: d,
+      diagnosis: report,
+      prescription: prescription,
+    };
     res.status(200).send(appointmentDetails);
   } catch (err) {
     res.status(400).send(err.message);
@@ -465,9 +463,13 @@ module.exports.selectReport = async (req, res) => {
 
 //Old Appointments
 module.exports.oldAppointments = async (req, res) => {
-  const userID = req.params.id;
+  const token = req.params.id;
   try {
-    const { oldAppointments } = await Patient.findById(userID);
+    const { id } = jwt.verify(
+      token,
+      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
+    );
+    const { oldAppointments } = await Patient.findById(id);
     var appointmentDetails = [];
     for (var i = 0; i < oldAppointments.length; i++) {
       const { doctor, hospital, date } = await Appointment.findById(
@@ -493,9 +495,13 @@ module.exports.oldAppointments = async (req, res) => {
 
 //Upcoming appointments
 module.exports.upcomingAppointments = async (req, res) => {
-  const userID = req.params.id;
+  const token = req.params.id;
   try {
-    const { newAppointments } = await Patient.findById(userID);
+    const { id } = jwt.verify(
+      token,
+      "Grad_Proj.Espitalia#SecRet.Application@30132825275"
+    );
+    const { newAppointments } = await Patient.findById(id);
     var appointmentDetails = [];
     for (var i = 0; i < newAppointments.length; i++) {
       const { doctor, hospital, date, flowNumber } = await Appointment.findById(
