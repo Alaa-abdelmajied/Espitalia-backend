@@ -296,38 +296,55 @@ module.exports.getBloodRequests = async (req, res) => {
 //search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
 module.exports.patientGeneralSerach = async (req, res) => {
   const search = req.params.search;
-  const limitSize = 3;
-  var result = new Array();
+  const limitSize = 4;
+  // var result = new Array();
+  var doctorSeeMore = false;
+  var hospitalSeeMore = false;
+  var specializationsSeeMore = false;
   var doctors = await Doctor.find({
-    name: { $regex: ".*" + search + ".*" },
-  }).limit(limitSize);
+    name: { $regex: ".*" + search + ".*", $options: 'i' },
+  }).limit(limitSize).select({ name: 1 });
 
   var hospitals = await Hospital.find({
-    name: { $regex: ".*" + search + ".*" },
-  }).limit(limitSize);
+    name: { $regex: (".*") + search + ".*", $options: 'i' },
+  }).limit(limitSize).select({ name: 1 });
 
-  console.log(hospitals.length);
   var specializations = await Specialization.find({
-    name: { $regex: ".*" + search + ".*" },
-  }).limit(limitSize);
-
-  if (hospitals.length > limitSize) {
-    hospitals.pop();
+    name: { $regex: ".*" + search + ".*", $options: 'i' },
+  }).limit(limitSize).select({ name: 1 });
+  if (doctors.length == limitSize) {
+    doctors.pop();
+    doctorSeeMore = true;
   }
 
-  result.push({ doctors: doctors });
-  result.push({ hospitals: hospitals });
-  result.push({ specializations: specializations });
+  if (hospitals.length == limitSize) {
+    hospitals.pop();
+    hospitalSeeMore = true;
+  }
+
+  if (specializations.length == limitSize) {
+    specializations.pop();
+    specializationsSeeMore = true;
+  }
+
+
+  // result.push({ doctors: doctors });
+  // result.push({ hospitals: hospitals });
+  // result.push({ specializations: specializations });
 
   if (
-    (result[0].length === 0) &
-    (result[1].length === 0) &
-    (result[2].length === 0)
+    (doctors.length === 0) &
+    (hospitals.length === 0) &
+    (specializations.length === 0)
   )
     return res
       .status(404)
       .send("No hospitals or doctors or specializations found");
-  res.status(200).send(result);
+  res.status(200).send({
+    doctors: doctors, doctorSeeMore: doctorSeeMore,
+    hospitals: hospitals, hospitalSeeMore: hospitalSeeMore,
+    specializations: specializations, specializationsSeeMore: specializationsSeeMore
+  });
 };
 
 //function when pressed on specefic hospital it will return its Specialization
@@ -720,15 +737,6 @@ module.exports.getFlowOfEntrance = async (req, res) => {
   }
 };
 
-module.exports.getFlowOfEntrance = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { currentFlowNumber } = await Doctor.findOne({ _id: id });
-    res.status(200).send({ currentFlowNumber });
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
 //function to update db scheudles most probably it will be moved to dr controller
 //var intervalID = setInterval(myCallback, 5000);
 async function myCallback() {
