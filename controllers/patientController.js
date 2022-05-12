@@ -15,8 +15,7 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 const date = require("date-and-time");
-require('dotenv').config()
-
+require("dotenv").config();
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.Token_Secret);
@@ -24,7 +23,7 @@ const createToken = (id) => {
 
 const decodeToken = (token) => {
   return jwt.verify(token, process.env.Token_Secret).id;
-}
+};
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -302,16 +301,22 @@ module.exports.patientGeneralSerach = async (req, res) => {
   var hospitalSeeMore = false;
   var specializationsSeeMore = false;
   var doctors = await Doctor.find({
-    name: { $regex: ".*" + search + ".*", $options: 'i' },
-  }).limit(limitSize).select({ name: 1 });
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1 });
 
   var hospitals = await Hospital.find({
-    name: { $regex: (".*") + search + ".*", $options: 'i' },
-  }).limit(limitSize).select({ name: 1 });
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1 });
 
   var specializations = await Specialization.find({
-    name: { $regex: ".*" + search + ".*", $options: 'i' },
-  }).limit(limitSize).select({ name: 1 });
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1 });
   if (doctors.length == limitSize) {
     doctors.pop();
     doctorSeeMore = true;
@@ -327,7 +332,6 @@ module.exports.patientGeneralSerach = async (req, res) => {
     specializationsSeeMore = true;
   }
 
-
   // result.push({ doctors: doctors });
   // result.push({ hospitals: hospitals });
   // result.push({ specializations: specializations });
@@ -341,9 +345,12 @@ module.exports.patientGeneralSerach = async (req, res) => {
       .status(404)
       .send("No hospitals or doctors or specializations found");
   res.status(200).send({
-    doctors: doctors, doctorSeeMore: doctorSeeMore,
-    hospitals: hospitals, hospitalSeeMore: hospitalSeeMore,
-    specializations: specializations, specializationsSeeMore: specializationsSeeMore
+    doctors: doctors,
+    doctorSeeMore: doctorSeeMore,
+    hospitals: hospitals,
+    hospitalSeeMore: hospitalSeeMore,
+    specializations: specializations,
+    specializationsSeeMore: specializationsSeeMore,
   });
 };
 
@@ -397,6 +404,7 @@ module.exports.displayHomepage = async (req, res) => {
 
     for (var i = 0; i < dataSize; i++) {
       const doctorHospitalData = await Hospital.findById(doctor[i].hospitalID);
+      const { rating } = await Doctor.findById(doctor[i]._id);
       homepageData.push({
         hospitalID: hospital[i]._id,
         hospitalName: hospital[i].name,
@@ -406,6 +414,7 @@ module.exports.displayHomepage = async (req, res) => {
         speciality: doctor[i].specialization,
         doctorHospitalName: doctorHospitalData.name,
         doctorHospitalAddress: doctorHospitalData.address,
+        averageRating: rating,
       });
     }
     res.status(200).send(homepageData);
@@ -422,6 +431,7 @@ module.exports.seeAllDoctors = async (req, res) => {
       name: 1,
       specialization: 1,
       hospitalID: 1,
+      rating: 1,
     });
     for (var i = 0; i < doctorData.length; i++) {
       const doctorHospitalData = await Hospital.findById(
@@ -433,6 +443,7 @@ module.exports.seeAllDoctors = async (req, res) => {
         specialization: doctorData[i].specialization,
         doctorHospitalName: doctorHospitalData.name,
         doctorHospitalAddress: doctorHospitalData.address,
+        averageRating: doctorData[i].rating,
       });
     }
 
@@ -471,6 +482,7 @@ module.exports.selectReport = async (req, res) => {
     const d =
       date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
     const appointmentDetails = {
+      drId: doctorData._id,
       hospitalName: hospitalData.name,
       drName: doctorData.name,
       specialization: doctorData.specialization,
@@ -565,47 +577,97 @@ module.exports.editProfile = async (req, res) => {
   res.send(await Patient.findById(id));
 };
 
-module.exports.rateDoctor = async (req, res) => {
-  const { token, doctorId, rate } = req.body;
+// module.exports.rateDoctor = async (req, res) => {
+//   const { token, doctorId, rate } = req.body;
+//   try {
+//     const patientId = decodeToken(token);
+//     const { name } = await Patient.findOne({ _id: patientId });
+//     const doctor = await Doctor.findOne({ _id: doctorId });
+//     const numberOfReviews = doctor.workingDays.length;
+//     const newRate =
+//       (doctor.rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
+//     await Doctor.findByIdAndUpdate(doctorId, { rating: newRate });
+//     // res.status(200).send({ newRate, name });
+//     res.status(200).send("Rating done");
+//   } catch (err) {
+//     res.status(400).send(err.message);
+//   }
+// };
+
+//Review dr
+// module.exports.reviewDoctor = async (req, res) => {
+//   const { review, rating, doctorID, token } = req.body;
+//   try {
+//     const userID = decodeToken(token);
+//     const { name } = await Patient.findById(userID);
+//     const date = new Date();
+//     const fullDate =
+//       date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
+//     await Doctor.findByIdAndUpdate(
+//       { _id: doctorID },
+//       { $push: { reviews: [name, review, date] } }
+//     );
+//     const { rating } = await Doctor.findById(doctorID);
+//     // const reviewDetails = [
+//     //   { name: name, date: fullDate, rating: rating, review: review },
+//     // ];
+//     // console.log(reviewDetails[0].name);
+//     // res.status(200).send(reviewDetails);
+//     res.status(200).send("Review done");
+//   } catch (err) {
+//     res.status(400).send(err.message);
+//   }
+// };
+
+module.exports.rateAndReview = async (req, res) => {
+  const { rate, review, doctorId, token } = req.body;
   try {
     const patientId = decodeToken(token);
-    const { name } = await Patient.findOne({ _id: patientId });
-    const doctor = await Doctor.findOne({ _id: doctorId });
-    const numberOfReviews = doctor.workingDays.length;
+    const { name } = await Patient.findById(patientId);
+    const { rating, reviews } = await Doctor.findById(doctorId);
+    const numberOfReviews = reviews.length;
     const newRate =
-      (doctor.rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
-    res.status(200).send({ newRate, name });
+      (rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
+    const date = new Date();
+    const fullDate =
+      date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
+    await Doctor.findByIdAndUpdate(doctorId, {
+      rating: newRate,
+      $push: {
+        reviews: [{ name: name, rating: rate, review: review, date: fullDate }],
+      },
+    });
+    res.status(200).send("Rating and review done");
   } catch (err) {
     res.status(400).send(err.message);
   }
 };
 
-//Review dr
-module.exports.reviewDoctor = async (req, res) => {
-  const { review, doctorID, token } = req.body;
+
+module.exports.getDoctorDetails = async (req, res) => {
+  const doctorId = req.params.id;
+  var reviewDetails = [];
   try {
-    const userID = decodeToken(token);
-    const { name } = await Patient.findOne({ _id: userID });
-    await Doctor.findByIdAndUpdate(
-      { _id: doctorID },
-      { $push: { reviews: [name, review] } }
-    );
-    const doctor = await Doctor.findOne({ _id: doctorID });
-    const date = new Date();
-    const fullDate =
-      date.getDate() + "-" + date.getMonth() + "-" + date.getFullYear();
-    const reviewDetails = [
-      { name: name },
-      { date: fullDate },
-      { rating: doctor.rating },
-      { review: review },
-    ];
-    console.log(reviewDetails);
+    const { reviews } = await Doctor.findById(doctorId);
+    for (var i = 0; i < reviews.length; i++) {
+      const fullDate =
+        reviews[i].date.getDate() +
+        "-" +
+        (reviews[i].date.getMonth() + 1) +
+        "-" +
+        reviews[i].date.getFullYear();
+      reviewDetails.push({
+        name: reviews[i].name,
+        review: reviews[i].review,
+        rate: reviews[i].rating,
+        date: fullDate,
+      });
+    }
     res.status(200).send(reviewDetails);
   } catch (err) {
     res.status(400).send(err.message);
-  }
-};
+  }};
+
 
 module.exports.book = async (req, res) => {
   const { token, drId, date, from, to } = req.body;
@@ -794,7 +856,8 @@ async function myCallback() {
             newSchedule.push(addedSchedule);
             if (nextDayIndex != workingDays.length - 1) {
               if (
-                workingDays[nextDayIndex].day == workingDays[nextDayIndex + 1].day
+                workingDays[nextDayIndex].day ==
+                workingDays[nextDayIndex + 1].day
               ) {
                 addedSchedule = new Schedule({
                   date: nextDay,
