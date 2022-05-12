@@ -381,7 +381,10 @@ module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
 
 //Display Homepage
 module.exports.displayHomepage = async (req, res) => {
-  var homepageData = [];
+  var hospitals = [];
+  var doctors = [];
+  var specializations = [];
+
   const dataSize = 5;
   try {
     const doctor = await Doctor.aggregate([
@@ -402,22 +405,31 @@ module.exports.displayHomepage = async (req, res) => {
       { $sample: { size: dataSize } },
     ]);
 
+    const specialization = await Specialization.aggregate([
+      { $project: { _id: 1, name: 1 } },
+      { $sample: { size: dataSize } },
+    ]);
+
     for (var i = 0; i < dataSize; i++) {
-      const doctorHospitalData = await Hospital.findById(doctor[i].hospitalID);
+      const { name, address } = await Hospital.findById(doctor[i].hospitalID);
       const { rating } = await Doctor.findById(doctor[i]._id);
-      homepageData.push({
-        hospitalID: hospital[i]._id,
-        hospitalName: hospital[i].name,
-        hospitalAddress: hospital[i].address,
-        drID: doctor[i]._id,
-        drName: doctor[i].name,
+      hospitals.push({
+        _id: hospital[i]._id,
+        name: hospital[i].name,
+        address: hospital[i].address,
+      });
+      doctors.push({
+        _id: doctor[i]._id,
+        name: doctor[i].name,
         speciality: doctor[i].specialization,
-        doctorHospitalName: doctorHospitalData.name,
-        doctorHospitalAddress: doctorHospitalData.address,
+        hospitalName: name,
+        hospitalAddress: address,
         averageRating: rating,
       });
+      specializations.push({ specialization: specialization[i].name });
     }
-    res.status(200).send(homepageData);
+
+    res.status(200).send({ hospitals, doctors, specializations });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -643,12 +655,13 @@ module.exports.rateAndReview = async (req, res) => {
   }
 };
 
-
 module.exports.getDoctorDetails = async (req, res) => {
   const doctorId = req.params.id;
   var reviewDetails = [];
+  var scheduleDetails = [];
+
   try {
-    const { reviews } = await Doctor.findById(doctorId);
+    const { reviews, schedule } = await Doctor.findById(doctorId);
     for (var i = 0; i < reviews.length; i++) {
       const fullDate =
         reviews[i].date.getDate() +
@@ -663,11 +676,24 @@ module.exports.getDoctorDetails = async (req, res) => {
         date: fullDate,
       });
     }
-    res.status(200).send(reviewDetails);
+    for (var i = 0; i < schedule.length; i++) {
+      const fullDate =
+        schedule[i].date.getDate() +
+        "-" +
+        (schedule[i].date.getMonth() + 1) +
+        "-" +
+        schedule[i].date.getFullYear();
+      scheduleDetails.push({
+        date: fullDate,
+        from: schedule[i].from,
+        to: schedule[i].to,
+      });
+    }
+    res.status(200).send({ reviewDetails, scheduleDetails });
   } catch (err) {
     res.status(400).send(err.message);
-  }};
-
+  }
+};
 
 module.exports.book = async (req, res) => {
   const { token, drId, date, from, to } = req.body;
