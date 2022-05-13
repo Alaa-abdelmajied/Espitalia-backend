@@ -15,6 +15,9 @@ router.post('/addReceptionist', auth, hospitalController.addReceptionist);
 //TODO: GET request:
 router.get('/viewDoctors', auth, hospitalController.viewDoctors);
 router.get('/viewReceptionists', auth, hospitalController.viewReceptionists);
+router.get('/searchDoctors/:search',auth,hospitalController.hospitalSearchDoctor);
+//router.get('/searchReceptionist/:search',auth,hospitalController.hospitalSearchReceptionist);
+
 
 //TODO: PUT request:
 router.put('/deactivateDoctor', auth, hospitalController.deactivateDoctor);
