@@ -144,7 +144,7 @@ module.exports.verifyAccount = async (req, res) => {
           }
         );
       }
-      await WaitingVerfication.deleteOne({ patient: decodedToken.id });
+      await WaitingVerfication.deleteOne({ patient: patientId });
       res.status(200).send("Verified");
     } else {
       res.status(400).send("Wrong Otp");
@@ -186,7 +186,7 @@ module.exports.patientForgotPassword = async (req, res) => {
     if (patient) {
       sendOtp(patient.id, patient.name, patient.email);
       const token = createToken(patient.id);
-      res.status(201).send(token);
+      res.status(201).send({ token });
     } else {
       res.status(404).send("This email does not exist");
     }
@@ -226,10 +226,28 @@ module.exports.patientSearchDoctor = async (req, res) => {
 //search be specialization table
 module.exports.patientSearchSpecialization = async (req, res) => {
   const search = req.params.search;
+  var doctorDetails = [];
   try {
     const specializations = await Specialization.find({ name: search });
     console.log(specializations[0].doctorIds);
-    res.send(specializations[0].doctorIds);
+    for (var i = 0; i < specializations[0].doctorIds.length; i++) {
+      const { _id, name, specialization, hospitalID, rating } =
+        await Doctor.findById(specializations[0].doctorIds[i]);
+      const hospitalInfo = await Hospital.findById(hospitalID).select({
+        name: 1,
+        address: 1,
+        _id: 0,
+      });
+      doctorDetails.push({
+        _id: _id,
+        name: name,
+        specialization: specialization,
+        averageRating: rating,
+        hospitalName: hospitalInfo.name,
+        hospitalAddress: hospitalInfo.address,
+      });
+    }
+    res.send(doctorDetails);
   } catch (error) {
     res.status(404).send(error.message);
   }
@@ -251,8 +269,13 @@ module.exports.getPatient = async (req, res) => {
 
   try {
     const id = decodeToken(token);
-    const patient = await Patient.find({ _id: id });
-    //console.log(patient);
+    const patient = await Patient.findById(id).select({
+      name: 1,
+      phoneNumber: 1,
+      email: 1,
+      _id: 0,
+    });
+    // console.log(patient);
     res.send(patient);
   } catch (err) {
     res.status(400).send(err.message);
@@ -426,7 +449,10 @@ module.exports.displayHomepage = async (req, res) => {
         hospitalAddress: address,
         averageRating: rating,
       });
-      specializations.push({ specialization: specialization[i].name });
+      specializations.push(
+        // specId: specialization[i]._id,
+        specialization[i].name
+      );
     }
 
     res.status(200).send({ hospitals, doctors, specializations });
@@ -478,6 +504,19 @@ module.exports.seeAllHospitals = async (req, res) => {
     }
 
     res.status(200).send(allHospitals);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.seeAllSpecializations = async (req, res) => {
+  var allSpecializations = [];
+  try {
+    const specializationData = await Specialization.find().select({
+      name: 1,
+      _id: 0,
+    });
+    res.status(200).send(specializationData);
   } catch (err) {
     res.status(400).send(err.message);
   }

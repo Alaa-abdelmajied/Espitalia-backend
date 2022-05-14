@@ -48,6 +48,7 @@ router.get("/homepage", patientController.displayHomepage);
 router.get("/doctor/:id", patientController.getDoctorDetails);
 router.get("/allDoctors", patientController.seeAllDoctors);
 router.get("/allHospitals", patientController.seeAllHospitals);
+router.get("/allSpecializations", patientController.seeAllSpecializations);
 router.get("/oldAppointment/:token", patientController.oldAppointments);
 router.get(
   "/upcomingAppointment/:token",
