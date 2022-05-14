@@ -29,7 +29,6 @@ router.post(
 );
 router.post("/rateAndReview", patientController.rateAndReview);
 router.post("/book", patientController.book);
-router.post("/review", patientController.reviewDoctor);
 
 //GET Routes
 router.get("/searchDoctors/:search", patientController.patientSearchDoctor);
@@ -58,7 +57,7 @@ router.get(
 router.get("/getPatient/:token", patientController.getPatient);
 router.get("/getNotification/:token", patientController.getNotification);
 router.get("/getBloodRequests/:skipNumber", patientController.getBloodRequests);
-router.get("/isBloodReqUpdated/:date",patientController.isBloodReqUpdated)
+router.get("/isBloodReqUpdated/:date", patientController.isBloodReqUpdated)
 router.get('/currentFlowNumber/:id', patientController.getFlowOfEntrance);
 
 //DELETE Routes
