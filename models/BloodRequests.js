@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const bloodRequestSchema= new mongoose.Schema(
+const bloodRequestSchema = new mongoose.Schema(
     {
 
         // userID:{
@@ -12,11 +12,11 @@ const bloodRequestSchema= new mongoose.Schema(
         bloodType: {
             type: String,
         },
-        // date:{
-        //     type:Date,
-        // },
-        quantity:{
-            type:String,
+        date: {
+            type: Date,
+        },
+        quantity: {
+            type: String,
         },
 
     }
