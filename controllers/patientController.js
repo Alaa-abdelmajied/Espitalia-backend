@@ -145,7 +145,7 @@ module.exports.verifyAccount = async (req, res) => {
           }
         );
       }
-      await WaitingVerfication.deleteOne({ patient: decodedToken.id });
+      await WaitingVerfication.deleteOne({ patient: patientId });
       res.status(200).send("Verified");
     } else {
       res.status(400).send("Wrong Otp");
@@ -272,22 +272,57 @@ module.exports.getNotification = async (req, res) => {
   }
 };
 
-module.exports.getBloodRequests = async (req, res) => {
+module.exports.addBlood = async (req, res) => {
+  const data = [
+    // { "hospitalID": "626a7edce1a7da1e245abdc2", "bloodType": "A RhD positive (A+)", "date": "2022-05-13T16:00:48Z", "quantity": 472 },
+    // { "hospitalID": "626a7ef1e1a7da1e245abe58", "bloodType": "A RhD positive (A+)", "date": "2022-05-13T16:42:48Z", "quantity": 496 },
+    // { "hospitalID": "626a7ef5e1a7da1e245abe74", "bloodType": "A RhD negative (A-)", "date": "2022-05-12T16:42:48Z", "quantity": 487 },
+    // { "hospitalID": "626a7ee3e1a7da1e245abdfa", "bloodType": "A RhD positive (A+)", "date": "2022-05-10T16:42:48Z", "quantity": 473 },
+    // { "hospitalID": "626a7ee2e1a7da1e245abdee", "bloodType": "AB RhD negative (AB-)", "date": "2022-05-01T16:42:48Z", "quantity": 468 },
+    // { "hospitalID": "626a7ef5e1a7da1e245abe72", "bloodType": "B RhD negative (B-)", "date": "2022-05-13T10:42:48Z", "quantity": 470 },
+    { "hospitalID": "626a7ef7e1a7da1e245abe80", "bloodType": "AB RhD positive (AB+)", "date": "2022-12-05T13:26:50Z", "quantity": 500 },
+    // { "hospitalID": "626a7ee8e1a7da1e245abe18", "bloodType": "AB RhD positive (AB+)", "date": "2022-05-11T16:42:48Z", "quantity": 464 },
+    // { "hospitalID": "626a7edfe1a7da1e245abdde", "bloodType": "A RhD negative (A-)", "date": "2022-06-13T16:42:48Z", "quantity": 461 },
+    // { "hospitalID": "626a7eeee1a7da1e245abe44", "bloodType": "A RhD positive (A+)", "date": "2022-05-13T10:00:00Z", "quantity": 494 },
+    // { "hospitalID": "626a7edde1a7da1e245abdce", "bloodType": "B RhD negative (B-)", "date": "2022-05-13T00:00:00Z", "quantity": 488 },
+    // { "hospitalID": "626a7ed6e1a7da1e245abd98", "bloodType": "O RhD negative (O-)", "date": "2022-05-12T05:05:50Z", "quantity": 487 }
+  ];
+  await BloodRequests.insertMany(data);
+  res.send(200);
+}
+
+module.exports.isBloodReqUpdated = async (req, res) => {
+  const { date } = req.params;
+  console.log(date);
   try {
-    const bloodRequests = await BloodRequests.find().limit(5);
+    const newEntries = await BloodRequests.count({ date: { $gt: new Date(date) } });
+    res.status(200).send({ newEntries });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+}
+
+module.exports.getBloodRequests = async (req, res) => {
+  const { skipNumber } = req.params;
+  const limitSize = 5;
+  try {
+    const bloodRequests = await BloodRequests.find().sort({ date: -1, _id: 1 }).skip(skipNumber).limit(limitSize);
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
       var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
+      var date = new Date(bloodRequests[i].date);
+      date.setHours(date.getHours() + 2);
       var req = {
         id: bloodRequests[i]._id,
         hospital_Name: hospital.name,
         bloodType: bloodRequests[i].bloodType,
         quantity: bloodRequests[i].quantity,
+        date: date
       };
       requests.push(req);
-      console.log(req);
+      // console.log(req);
     }
-    res.send(requests);
+    res.status(200).send(requests);
   } catch (err) {
     res.status(400).send(err.message);
   }
