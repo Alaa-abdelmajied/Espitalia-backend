@@ -245,3 +245,37 @@ function GenerateSchedule(workingdays) {
     }
     return NewSchedule;
 }
+
+module.exports.hospitalSearchDoctor = async(req,res) =>{
+    const search = req.params.search;
+    const hospitalID = req.hospital._id;
+    try {
+        const drs = await Doctor.find({
+            name: { $regex: ".*" + search + ".*" },
+            hospitalID: hospitalID,
+            isActive:true
+        });
+        res.status(200).send(drs);
+    } catch (error) {
+        res.status(404).send("No doctors found");
+    }
+   
+}
+
+// lesa mesh sha8ala
+// module.exports.hospitalSearchReceptionist = async(req,res)=>{
+//     const search = req.params.search;
+//     const hospitalID = req.hospital._id;
+//     console.log(search);
+//     console.log(hospitalID);
+//     try {
+//         const recepitionists = Receptionist.find({
+//             name: { $regex: ".*" + search + ".*" },
+//             hospitalID: hospitalID, 
+//         });
+//         res.status(200).send(recepitionists);
+//     } catch (error) {
+//         res.status(404).send("No recepitionists found");
+//     }
+
+// }

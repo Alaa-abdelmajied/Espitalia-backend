@@ -27,7 +27,7 @@ router.post(
   "/pressOnHospitalThenSpecialization",
   patientController.pressOnHospitalThenSpecialization
 );
-router.post("/rate", patientController.rateDoctor);
+router.post("/rateAndReview", patientController.rateAndReview);
 router.post("/book", patientController.book);
 router.post("/review", patientController.reviewDoctor);
 router.post("/add", patientController.addBlood);
@@ -47,11 +47,15 @@ router.get(
 );
 router.get("/report/:id", patientController.selectReport);
 router.get("/homepage", patientController.displayHomepage);
-// router.get('/seeMore', patientController.seeMore);
+router.get("/doctor/:id", patientController.getDoctorDetails);
 router.get("/allDoctors", patientController.seeAllDoctors);
 router.get("/allHospitals", patientController.seeAllHospitals);
+router.get("/allSpecializations", patientController.seeAllSpecializations);
 router.get("/oldAppointment/:token", patientController.oldAppointments);
-router.get("/upcomingAppointment/:token", patientController.upcomingAppointments);
+router.get(
+  "/upcomingAppointment/:token",
+  patientController.upcomingAppointments
+);
 router.get("/getPatient/:token", patientController.getPatient);
 router.get("/getNotification/:token", patientController.getNotification);
 router.get("/getBloodRequests/:skipNumber", patientController.getBloodRequests);
