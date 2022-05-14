@@ -19,6 +19,9 @@ router.get('/viewReceptionists', auth, hospitalController.viewReceptionists);
 //TODO: PUT request:
 router.put('/deactivateDoctor', auth, hospitalController.deactivateDoctor);
 router.put('/activateDoctor', auth, hospitalController.activateDoctor);
+router.put('/removeWorkingDay', auth, hospitalController.removeWorkingDay);
+router.put('/addWorkingDay', auth, hospitalController.addWorkingDay);
+
 router.put('/deactivateReceptionist', auth, hospitalController.deactivateReceptionist);
 router.put('/activateReceptionist', auth, hospitalController.activateReceptionist);
 

@@ -12,3 +12,14 @@ module.exports = function validateToken(req, res, next) {
         res.status(400).send(`Invalid token`);
     }
 }
+module.exports = function autoLogin(req, res, next) {
+    try{
+        const token = req.header('x-auth-token');
+        const decoded = jsonwebtoken .verify(token,"PrivateKey");
+        req.hospital = decoded;
+        next();
+    }
+    catch (error){
+        res.status(400).send(`ERROR:${error}`);
+    }
+}

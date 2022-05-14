@@ -14,7 +14,7 @@ module.exports.Login = async (req, res) => {
     try {
         const hospital = await Hospital.hospitalLogin(email, password);
         const token = hospital.generateAuthToken();
-        res.header('x-auth-token', token).send("Done");
+        res.header('x-auth-token', token).send(hospital);
     } catch (e) {
         res.status(400).send(e.message);
     }
@@ -126,6 +126,51 @@ module.exports.deactivateDoctor = async (req, res) => {
     res.send(`${doctor.name}'s account is deactivated and removed from your hospital`);
 }
 
+module.exports.removeWorkingDay = async (req, res) => {
+    const { doctorID, workingDay } = req.body;
+    try{
+        const doctor = await Doctor.update(
+            {_id :doctorID},
+            {
+                $pull: {
+                    workingDays: {_id: workingDay}
+                }
+            }
+        );
+        
+        res.send("removed successfully");
+    }
+    catch(error) {
+        console.log(error);
+        res.status(400).send(error);
+    }
+}
+
+module.exports.addWorkingDay = async (req, res) => {
+    const { doctorID, day, from, to } = req.body;
+    const workingDay = {
+        day: day,
+        from: from,
+        to: to
+    };
+    try{
+        const doctor = await Doctor.update(
+            {_id :doctorID},
+            {
+                $push: {
+                    workingDays: workingDay
+                }
+            }
+        );
+        
+        res.send("added successfully");
+    }
+    catch(error) {
+        console.log(error);
+        res.status(400).send('error');
+    }
+}
+
 /*
 DONE:
     addReceptionist function takes the id of the hospital that called it from the decoded token in the middleware.
@@ -218,7 +263,7 @@ module.exports.activateReceptionist = async (req, res) => {
 function GenerateSchedule(workingdays) {
     let counter = 1;
     let NewSchedule = [];
-
+//Sat, Sun, Mon, Tue, Wed, Thu
     let datenow = new Date(Date.now());
     let dateItr = date.addDays(datenow, counter);
     let newDateForm = date.format(dateItr, 'ddd, MMM DD YYYY');
