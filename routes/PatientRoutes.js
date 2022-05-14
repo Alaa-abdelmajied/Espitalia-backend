@@ -30,7 +30,6 @@ router.post(
 router.post("/rateAndReview", patientController.rateAndReview);
 router.post("/book", patientController.book);
 router.post("/review", patientController.reviewDoctor);
-router.post("/add", patientController.addBlood);
 
 //GET Routes
 router.get("/searchDoctors/:search", patientController.patientSearchDoctor);

@@ -294,24 +294,6 @@ module.exports.getNotification = async (req, res) => {
   }
 };
 
-module.exports.addBlood = async (req, res) => {
-  const data = [
-    // { "hospitalID": "626a7edce1a7da1e245abdc2", "bloodType": "A RhD positive (A+)", "date": "2022-05-13T16:00:48Z", "quantity": 472 },
-    // { "hospitalID": "626a7ef1e1a7da1e245abe58", "bloodType": "A RhD positive (A+)", "date": "2022-05-13T16:42:48Z", "quantity": 496 },
-    // { "hospitalID": "626a7ef5e1a7da1e245abe74", "bloodType": "A RhD negative (A-)", "date": "2022-05-12T16:42:48Z", "quantity": 487 },
-    // { "hospitalID": "626a7ee3e1a7da1e245abdfa", "bloodType": "A RhD positive (A+)", "date": "2022-05-10T16:42:48Z", "quantity": 473 },
-    // { "hospitalID": "626a7ee2e1a7da1e245abdee", "bloodType": "AB RhD negative (AB-)", "date": "2022-05-01T16:42:48Z", "quantity": 468 },
-    // { "hospitalID": "626a7ef5e1a7da1e245abe72", "bloodType": "B RhD negative (B-)", "date": "2022-05-13T10:42:48Z", "quantity": 470 },
-    { "hospitalID": "626a7ef7e1a7da1e245abe80", "bloodType": "AB RhD positive (AB+)", "date": "2022-12-05T13:26:50Z", "quantity": 500 },
-    // { "hospitalID": "626a7ee8e1a7da1e245abe18", "bloodType": "AB RhD positive (AB+)", "date": "2022-05-11T16:42:48Z", "quantity": 464 },
-    // { "hospitalID": "626a7edfe1a7da1e245abdde", "bloodType": "A RhD negative (A-)", "date": "2022-06-13T16:42:48Z", "quantity": 461 },
-    // { "hospitalID": "626a7eeee1a7da1e245abe44", "bloodType": "A RhD positive (A+)", "date": "2022-05-13T10:00:00Z", "quantity": 494 },
-    // { "hospitalID": "626a7edde1a7da1e245abdce", "bloodType": "B RhD negative (B-)", "date": "2022-05-13T00:00:00Z", "quantity": 488 },
-    // { "hospitalID": "626a7ed6e1a7da1e245abd98", "bloodType": "O RhD negative (O-)", "date": "2022-05-12T05:05:50Z", "quantity": 487 }
-  ];
-  await BloodRequests.insertMany(data);
-  res.send(200);
-}
 
 module.exports.isBloodReqUpdated = async (req, res) => {
   const { date } = req.params;
