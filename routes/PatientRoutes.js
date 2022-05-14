@@ -29,6 +29,8 @@ router.post(
 );
 router.post("/rateAndReview", patientController.rateAndReview);
 router.post("/book", patientController.book);
+router.post("/review", patientController.reviewDoctor);
+router.post("/add", patientController.addBlood);
 
 //GET Routes
 router.get("/searchDoctors/:search", patientController.patientSearchDoctor);
@@ -56,8 +58,9 @@ router.get(
 );
 router.get("/getPatient/:token", patientController.getPatient);
 router.get("/getNotification/:token", patientController.getNotification);
-router.get("/getBloodRequests", patientController.getBloodRequests);
-router.get("/currentFlowNumber/:id", patientController.getFlowOfEntrance);
+router.get("/getBloodRequests/:skipNumber", patientController.getBloodRequests);
+router.get("/isBloodReqUpdated/:date",patientController.isBloodReqUpdated)
+router.get('/currentFlowNumber/:id', patientController.getFlowOfEntrance);
 
 //DELETE Routes
 router.delete("/cancel", patientController.cancelAppointment);
