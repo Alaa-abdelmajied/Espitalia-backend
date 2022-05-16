@@ -38,6 +38,12 @@ router.get(
 );
 router.get("/searchHospitals/:search", patientController.patientSearchHospital);
 router.get("/search/:search", patientController.patientGeneralSerach);
+router.get(
+  "/searchAllSpecializations/:specialization",
+  patientController.searchSpecialization
+);
+router.get("/searchAllDoctors/:doctor", patientController.searchDoctor);
+router.get("/searchAllHospitals/:hospital", patientController.searchHospital);
 router.get("/pressOnHospital/:id", patientController.pressOnHospital);
 router.get(
   "/pressOnHospitalThenSpecialization/:id/:search",
@@ -60,7 +66,7 @@ router.get("/getBloodRequests", patientController.getBloodRequests);
 router.get("/currentFlowNumber/:id", patientController.getFlowOfEntrance);
 
 //DELETE Routes
-router.delete("/cancel", patientController.cancelAppointment);
+router.delete("/cancel/:appointmentID", patientController.cancelAppointment);
 
 //PUT Routes
 router.put("/editProfile", patientController.editProfile);
