@@ -26,6 +26,10 @@ const patientSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Please enter a date of birth'],
     },
+    gender: {
+        type: String,
+        required: [true, 'Please enter a gender']
+    },
     avatar: {
         type: Buffer
     },
@@ -34,7 +38,7 @@ const patientSchema = new mongoose.Schema({
         default: 0
     },
     questions: {
-        type: Boolean
+        type: String
     },
     oldAppointments: {
         type: [mongoose.Types.ObjectId]
