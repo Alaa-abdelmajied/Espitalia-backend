@@ -13,6 +13,12 @@ const appointmentSchema = new mongoose.Schema({
   date: {
     type: Date,
   },
+  from: {
+    type: String,
+  },
+  to: {
+    type: String,
+  },
   report: {
     type: String,
   },
