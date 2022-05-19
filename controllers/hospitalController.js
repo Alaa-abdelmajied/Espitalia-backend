@@ -2,6 +2,7 @@ const Hospital = require('../models/Hospital');
 const _ = require('lodash');
 const { Doctor, Schedule } = require('../models/Doctor');
 const Receptionist = require('../models/Receptionist');
+const Specialization = require('../models/Specialization');
 const jsonwebtoken = require('jsonwebtoken');
 const date = require('date-and-time');
 
@@ -43,6 +44,28 @@ module.exports.viewDoctors = async (req, res) => {
     if (!doctors) return res.status(404).send("nothing found");
     res.send(doctors);
 }
+module.exports.getDoctor = async (req, res) => {
+    // console.log('id:');
+    // console.log(req.params.doctorID);
+    const doctor = await Doctor.findOne({ _id: req.params.doctorID });
+    if (!doctor) return res.status(404).send("nothing found");
+    res.send(doctor);
+}
+
+module.exports.getSpecializations = async (req, res) => {
+    try {
+        const arr = [];
+        const specializations = await Specialization.find().select('name -_id');
+        for (var i = 0; i < specializations.length; i++) {
+            arr.push(specializations[i].name);
+        }
+        res.send(arr);
+    }
+    catch (error) {
+        res.status(404).send('specializations not found');
+    }
+
+}
 
 /*
 DONE:
@@ -59,7 +82,11 @@ FIXME:
 */
 module.exports.addDoctor = async (req, res) => {
     const { error } = Doctor.validate(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
+    console.log('entered');
+    if (error) {
+        console.log(error.details[0].message);
+        return res.status(400).send(error.details[0].message);
+    }
     //console.log(`ID: ${req.hospital._id}`);
     //console.log(req.body.email);
     let doctor = await Doctor.findOne({ email: req.body.email });
@@ -125,22 +152,25 @@ module.exports.deactivateDoctor = async (req, res) => {
     doctor.save();
     res.send(`${doctor.name}'s account is deactivated and removed from your hospital`);
 }
-
+/*
+DONE:
+    it takes doctor's id and the working day id, then it look for the doctor and remove his working day
+*/
 module.exports.removeWorkingDay = async (req, res) => {
     const { doctorID, workingDay } = req.body;
-    try{
+    try {
         const doctor = await Doctor.update(
-            {_id :doctorID},
+            { _id: doctorID },
             {
                 $pull: {
-                    workingDays: {_id: workingDay}
+                    workingDays: { _id: workingDay }
                 }
             }
         );
-        
+
         res.send("removed successfully");
     }
-    catch(error) {
+    catch (error) {
         console.log(error);
         res.status(400).send(error);
     }
@@ -153,19 +183,19 @@ module.exports.addWorkingDay = async (req, res) => {
         from: from,
         to: to
     };
-    try{
+    try {
         const doctor = await Doctor.update(
-            {_id :doctorID},
+            { _id: doctorID },
             {
                 $push: {
                     workingDays: workingDay
                 }
             }
         );
-        
+
         res.send("added successfully");
     }
-    catch(error) {
+    catch (error) {
         console.log(error);
         res.status(400).send('error');
     }
@@ -207,6 +237,56 @@ module.exports.addReceptionist = async (req, res) => {
         receptionist.hospitalID = req.hospital._id;
         receptionist.save();
         res.send(`${receptionist.name} is created and added to your hospital`);
+    }
+}
+
+module.exports.getReceptionist = async (req, res) => {
+    const receptionist = await Receptionist.findOne({ _id: req.params.receptID });
+    if (!receptionist) return res.status(404).send("nothing found");
+    res.send(receptionist);
+}
+module.exports.addWorkingDayRecept = async (req, res) => {
+    const { receptionistID, day, from, to } = req.body;
+    const workingDay = {
+        day: day,
+        from: from,
+        to: to
+    };
+    try {
+        const receptionist = await Receptionist.updateOne(
+            { _id: receptionistID },
+            {
+                $push: {
+                    workingDays: workingDay
+                }
+            }
+        );
+
+        res.send("added successfully");
+    }
+    catch (error) {
+        console.log(error);
+        res.status(400).send('error');
+    }
+}
+
+module.exports.removeWorkingDayRecept = async (req, res) => {
+    const { receptionistID, workingDay } = req.body;
+    try {
+        const receptionist = await Receptionist.updateOne(
+            { _id: receptionistID },
+            {
+                $pull: {
+                    workingDays: { _id: workingDay }
+                }
+            }
+        );
+
+        res.send("removed successfully");
+    }
+    catch (error) {
+        console.log(error);
+        res.status(400).send(error);
     }
 }
 
@@ -263,12 +343,13 @@ module.exports.activateReceptionist = async (req, res) => {
 function GenerateSchedule(workingdays) {
     let counter = 1;
     let NewSchedule = [];
-//Sat, Sun, Mon, Tue, Wed, Thu
+    //Sat, Sun, Mon, Tue, Wed, Thu
     let datenow = new Date(Date.now());
+    datenow.setTime(0);
     let dateItr = date.addDays(datenow, counter);
     let newDateForm = date.format(dateItr, 'ddd, MMM DD YYYY');
     let dayName = newDateForm.split(",");
-    var nextDay = dateItr ;
+    var nextDay = dateItr;
 
     while (counter < 15) {
         for (var i = 0; i < workingdays.length; i++) {
@@ -282,7 +363,7 @@ function GenerateSchedule(workingdays) {
                 NewSchedule.push(addedSchedule);
             }
         }
-        nextDay = date.addDays(datenow, counter);
+        nextDay = date.addDays(dateItr, counter);
         var nextDayII = date.format(nextDay, 'ddd, MMM DD YYYY');
         nextDayName = nextDayII.split(",");
         dayName = nextDayName;
@@ -291,20 +372,20 @@ function GenerateSchedule(workingdays) {
     return NewSchedule;
 }
 
-module.exports.hospitalSearchDoctor = async(req,res) =>{
+module.exports.hospitalSearchDoctor = async (req, res) => {
     const search = req.params.search;
     const hospitalID = req.hospital._id;
     try {
         const drs = await Doctor.find({
             name: { $regex: ".*" + search + ".*" },
             hospitalID: hospitalID,
-            isActive:true
+            isActive: true
         });
         res.status(200).send(drs);
     } catch (error) {
         res.status(404).send("No doctors found");
     }
-   
+
 }
 
 // lesa mesh sha8ala
@@ -316,7 +397,7 @@ module.exports.hospitalSearchDoctor = async(req,res) =>{
 //     try {
 //         const recepitionists = Receptionist.find({
 //             name: { $regex: ".*" + search + ".*" },
-//             hospitalID: hospitalID, 
+//             hospitalID: hospitalID,
 //         });
 //         res.status(200).send(recepitionists);
 //     } catch (error) {

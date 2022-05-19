@@ -55,22 +55,22 @@ const receptionistSchema = new mongoose.Schema({
 const Receptionist = mongoose.model('receptionist', receptionistSchema);
 
 //test
-async function createReceptionist() {
-    const user = new Receptionist({
-        name: 'Maram',
-        username: 'maram98',
-        email: 'maram_98@gmail.com',
-        password: 'hiiiiiii',
-        hospital_name: 'Al Andalusia',
-        phone_number: 12345678910,
-        education: 'Faculty of Commerce',
-        from: 'Alexandria, Egypt'
+// async function createReceptionist() {
+//     const user = new Receptionist({
+//         name: 'Maram',
+//         username: 'maram98',
+//         email: 'maram_98@gmail.com',
+//         password: 'hiiiiiii',
+//         hospital_name: 'Al Andalusia',
+//         phone_number: 12345678910,
+//         education: 'Faculty of Commerce',
+//         from: 'Alexandria, Egypt'
 
-    });
+//     });
 
-    const result = await user.save();
-    console.log(result);
-}
+//     const result = await user.save();
+//     console.log(result);
+// }
 
 //createReceptionist();
 
