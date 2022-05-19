@@ -15,18 +15,6 @@ router.post(
   "/forgotPasswordChange",
   patientController.patientForgotPasswordChange
 );
-router.post("/searchDoctors", patientController.patientSearchDoctor);
-router.post(
-  "/searchSpecialization",
-  patientController.patientSearchSpecialization
-);
-router.post("/searchHospitals", patientController.patientSearchHospital);
-router.post("/search", patientController.patientGeneralSerach);
-router.post("/pressOnHospital", patientController.pressOnHospital);
-router.post(
-  "/pressOnHospitalThenSpecialization",
-  patientController.pressOnHospitalThenSpecialization
-);
 router.post("/rateAndReview", patientController.rateAndReview);
 router.post("/book", patientController.book);
 
@@ -39,11 +27,9 @@ router.get(
 router.get("/searchHospitals/:search", patientController.patientSearchHospital);
 router.get("/search/:search", patientController.patientGeneralSerach);
 router.get(
-  "/searchAllSpecializations/:specialization",
+  "/searchAllSpecializations/:search",
   patientController.searchSpecialization
 );
-router.get("/searchAllDoctors/:doctor", patientController.searchDoctor);
-router.get("/searchAllHospitals/:hospital", patientController.searchHospital);
 router.get("/pressOnHospital/:id", patientController.pressOnHospital);
 router.get(
   "/pressOnHospitalThenSpecialization/:id/:search",
@@ -63,8 +49,8 @@ router.get(
 router.get("/getPatient/:token", patientController.getPatient);
 router.get("/getNotification/:token", patientController.getNotification);
 router.get("/getBloodRequests/:skipNumber", patientController.getBloodRequests);
-router.get("/isBloodReqUpdated/:date", patientController.isBloodReqUpdated)
-router.get('/currentFlowNumber/:id', patientController.getFlowOfEntrance);
+router.get("/isBloodReqUpdated/:date", patientController.isBloodReqUpdated);
+router.get("/currentFlowNumber/:id", patientController.getFlowOfEntrance);
 
 //DELETE Routes
 router.delete("/cancel/:appointmentID", patientController.cancelAppointment);
