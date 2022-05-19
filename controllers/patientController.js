@@ -73,7 +73,7 @@ const sendOtp = async (patientId, patientName, email) => {
 };
 
 module.exports.patientSignup = async (req, res) => {
-  const { email, password, name, phoneNumber, dateOfBirth, questions } =
+  const { email, password, name, phoneNumber, dateOfBirth, gender, questions } =
     req.body;
   try {
     const patient = await Patient.create({
@@ -82,11 +82,12 @@ module.exports.patientSignup = async (req, res) => {
       name,
       phoneNumber,
       dateOfBirth,
+      gender,
       questions,
     });
     const token = createToken(patient.id);
     sendOtp(patient.id, patient.name, patient.email);
-    res.status(201).send(token);
+    res.status(201).send({token});
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -297,7 +298,6 @@ module.exports.getNotification = async (req, res) => {
 
 module.exports.isBloodReqUpdated = async (req, res) => {
   const { date } = req.params;
-  console.log(date);
   try {
     const newEntries = await BloodRequests.count({ date: { $gt: new Date(date) } });
     res.status(200).send({ newEntries });
@@ -308,14 +308,14 @@ module.exports.isBloodReqUpdated = async (req, res) => {
 
 module.exports.getBloodRequests = async (req, res) => {
   const { skipNumber } = req.params;
-  const limitSize = 5;
+  const limitSize = 3;
   try {
     const bloodRequests = await BloodRequests.find().sort({ date: -1, _id: 1 }).skip(skipNumber).limit(limitSize);
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
       var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
       var date = new Date(bloodRequests[i].date);
-      date.setHours(date.getHours() + 2);
+      // date.setHours(date.getHours() + 2);
       var req = {
         id: bloodRequests[i]._id,
         hospital_Name: hospital.name,
