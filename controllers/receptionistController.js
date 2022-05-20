@@ -1,4 +1,3 @@
-
 const { Doctor, Schedule } = require('../models/Doctor');
 const BloodRequest = require('../models/BloodRequests');
 
@@ -24,7 +23,7 @@ module.exports.Login = async (req, res) => {
   }
 }
 
-module.exports.GenerateBloodRequest = async (req, res) => {
+module.exports.CreateBloodRequest = async (req, res) => {
   const { bloodType, hospitalID, receptionistID } = req.body;
   try {
     const request = await BloodRequest.create({
@@ -60,11 +59,11 @@ module.exports.GetSpecializations = async (req, res) => {
 
   //const { id } = req.body;
   try {
-    const receptionist= await Receptionist.findById(req.receptionist._id);
+    const receptionist = await Receptionist.findById(req.receptionist._id);
     const hospitalID = await receptionist.hospitalID;
-    console.log("Hospital ID:" +hospitalID);
+    console.log("Hospital ID:" + hospitalID);
     // to test ; specializations need to be added to some hospitals in database
-    const hospital = await Hospital.findOne({_id :"626a7ed1e1a7da1e245abd68"});
+    const hospital = await Hospital.findOne({ _id: "626a7ed1e1a7da1e245abd68" });
     console.log(hospital.specialization);
 
     res.send(hospital.specialization);
@@ -73,6 +72,27 @@ module.exports.GetSpecializations = async (req, res) => {
     res.status(400).send(err);
   }
 
+}
+
+module.exports.getDoctorsWithSpecificSpecialization = async (req, res) => {
+  const { specializationName } = req.body;
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id);
+    const hospitalID = receptionist.hospitalID;
+    const hospital = await Hospital.findOne({ _id: hospitalID });
+    // console.log(hospital);
+    // console.log(hospital.specialization);
+
+    const doctor = await Doctor.find({
+      specialization: specializationName,
+      hospitalID: hospitalID
+    });
+    console.log(doctor);
+    res.send(doctor);
+  }
+  catch (err) {
+    res.status(400).send(err);
+  }
 }
 
 // module.exports.Logout = async (req, res) => {

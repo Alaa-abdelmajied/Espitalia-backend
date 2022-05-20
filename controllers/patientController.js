@@ -88,7 +88,7 @@ module.exports.patientSignup = async (req, res) => {
     });
     const token = createToken(patient.id);
     sendOtp(patient.id, patient.name, patient.email);
-    res.status(201).send({token});
+    res.status(201).send({ token });
   } catch (err) {
     res.status(400).send(err.message);
   }

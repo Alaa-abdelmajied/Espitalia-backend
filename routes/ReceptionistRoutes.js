@@ -7,11 +7,12 @@ const router = Router();
 
 //POST
 router.post("/login", receptionistController.Login);
-router.post("/GenerateBloodRequest", receptionistController.GenerateBloodRequest);
+router.post("/CreateBloodRequest", receptionistController.CreateBloodRequest);
 //router.post("/EditReservation", receptionistController.EditReservation);
 
 //GET
 router.get("/GetSpecializations", auth, receptionistController.GetSpecializations);
+router.get("/getDoctorsWithSpecificSpecialization",auth, receptionistController.getDoctorsWithSpecificSpecialization);
 //router.get("/ReviewReservation", receptionistController.ReviewReservation);
 //router.get("/CancelReservation", receptionistController.CancelReservation);
 
