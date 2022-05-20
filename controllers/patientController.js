@@ -15,6 +15,7 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 const date = require("date-and-time");
+const { reset } = require("nodemon");
 require("dotenv").config();
 
 const createToken = (id) => {
@@ -73,7 +74,7 @@ const sendOtp = async (patientId, patientName, email) => {
 };
 
 module.exports.patientSignup = async (req, res) => {
-  const { email, password, name, phoneNumber, dateOfBirth, questions } =
+  const { email, password, name, phoneNumber, dateOfBirth, gender, questions } =
     req.body;
   try {
     const patient = await Patient.create({
@@ -82,11 +83,12 @@ module.exports.patientSignup = async (req, res) => {
       name,
       phoneNumber,
       dateOfBirth,
+      gender,
       questions,
     });
     const token = createToken(patient.id);
     sendOtp(patient.id, patient.name, patient.email);
-    res.status(201).send(token);
+    res.status(201).send({token});
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -206,6 +208,68 @@ module.exports.patientForgotPasswordChange = async (req, res) => {
   }
 };
 
+//search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
+module.exports.patientGeneralSerach = async (req, res) => {
+  const search = req.params.search;
+  const limitSize = 4;
+  // var result = new Array();
+  var doctorSeeMore = false;
+  var hospitalSeeMore = false;
+  var specializationsSeeMore = false;
+  var doctors = await Doctor.find({
+    isActive: true,
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1 });
+
+  var hospitals = await Hospital.find({
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1, address: 1 });
+
+  var specializations = await Specialization.find({
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1 });
+  if (doctors.length == limitSize) {
+    doctors.pop();
+    doctorSeeMore = true;
+  }
+
+  if (hospitals.length == limitSize) {
+    hospitals.pop();
+    hospitalSeeMore = true;
+  }
+
+  if (specializations.length == limitSize) {
+    specializations.pop();
+    specializationsSeeMore = true;
+  }
+
+  // result.push({ doctors: doctors });
+  // result.push({ hospitals: hospitals });
+  // result.push({ specializations: specializations });
+
+  if (
+    (doctors.length === 0) &
+    (hospitals.length === 0) &
+    (specializations.length === 0)
+  )
+    return res
+      .status(404)
+      .send("No hospitals or doctors or specializations found");
+  res.status(200).send({
+    doctors: doctors,
+    doctorSeeMore: doctorSeeMore,
+    hospitals: hospitals,
+    hospitalSeeMore: hospitalSeeMore,
+    specializations: specializations,
+    specializationsSeeMore: specializationsSeeMore,
+  });
+};
 //search be asma2 el drs bas
 module.exports.patientSearchDoctor = async (req, res) => {
   const search = req.params.search;
@@ -216,12 +280,27 @@ module.exports.patientSearchDoctor = async (req, res) => {
 };
 
 //search be Specialization bas
-// module.exports.patientSearchSpecialization = async (req,res) => {
-//     const search = req.params.search;
-//     const specializations = await Doctor.find({specialization:{$regex: ".*" + search + ".*"}});
-//     if(specializations.length === 0) return res.status(404).send('No specializations with that name found');
-//     res.send(specializations);
-// }
+module.exports.searchSpecialization = async (req, res) => {
+  const search = req.params.search;
+  var specializations = await Specialization.find({
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  }).select({ name: 1 });
+  if (specializations.length === 0)
+    return res.status(404).send("No specializations with that name found");
+  res.send({ specializations: specializations });
+};
+
+// module.exports.searchSpecialization = async (req, res) => {
+//   const search = req.params.specialization;
+//   try {
+//     var specializations = await Specialization.find({
+//       name: { $regex: ".*" + search + ".*", $options: "i" },
+//     });
+//     res.status(200).send(specializations);
+//   } catch (error) {
+//     res.status(404).send("No specialzations found");
+//   }
+// };
 
 //search be specialization table
 module.exports.patientSearchSpecialization = async (req, res) => {
@@ -294,34 +373,37 @@ module.exports.getNotification = async (req, res) => {
   }
 };
 
-
 module.exports.isBloodReqUpdated = async (req, res) => {
   const { date } = req.params;
-  console.log(date);
   try {
-    const newEntries = await BloodRequests.count({ date: { $gt: new Date(date) } });
+    const newEntries = await BloodRequests.count({
+      date: { $gt: new Date(date) },
+    });
     res.status(200).send({ newEntries });
   } catch (err) {
     res.status(500).send(err.message);
   }
-}
+};
 
 module.exports.getBloodRequests = async (req, res) => {
   const { skipNumber } = req.params;
-  const limitSize = 5;
+  const limitSize = 3;
   try {
-    const bloodRequests = await BloodRequests.find().sort({ date: -1, _id: 1 }).skip(skipNumber).limit(limitSize);
+    const bloodRequests = await BloodRequests.find()
+      .sort({ date: -1, _id: 1 })
+      .skip(skipNumber)
+      .limit(limitSize);
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
       var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
       var date = new Date(bloodRequests[i].date);
-      date.setHours(date.getHours() + 2);
+      // date.setHours(date.getHours() + 2);
       var req = {
         id: bloodRequests[i]._id,
         hospital_Name: hospital.name,
         bloodType: bloodRequests[i].bloodType,
         quantity: bloodRequests[i].quantity,
-        date: date
+        date: date,
       };
       requests.push(req);
       // console.log(req);
@@ -330,68 +412,6 @@ module.exports.getBloodRequests = async (req, res) => {
   } catch (err) {
     res.status(400).send(err.message);
   }
-};
-
-//search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
-module.exports.patientGeneralSerach = async (req, res) => {
-  const search = req.params.search;
-  const limitSize = 4;
-  // var result = new Array();
-  var doctorSeeMore = false;
-  var hospitalSeeMore = false;
-  var specializationsSeeMore = false;
-  var doctors = await Doctor.find({
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-  })
-    .limit(limitSize)
-    .select({ name: 1 });
-
-  var hospitals = await Hospital.find({
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-  })
-    .limit(limitSize)
-    .select({ name: 1 });
-
-  var specializations = await Specialization.find({
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-  })
-    .limit(limitSize)
-    .select({ name: 1 });
-  if (doctors.length == limitSize) {
-    doctors.pop();
-    doctorSeeMore = true;
-  }
-
-  if (hospitals.length == limitSize) {
-    hospitals.pop();
-    hospitalSeeMore = true;
-  }
-
-  if (specializations.length == limitSize) {
-    specializations.pop();
-    specializationsSeeMore = true;
-  }
-
-  // result.push({ doctors: doctors });
-  // result.push({ hospitals: hospitals });
-  // result.push({ specializations: specializations });
-
-  if (
-    (doctors.length === 0) &
-    (hospitals.length === 0) &
-    (specializations.length === 0)
-  )
-    return res
-      .status(404)
-      .send("No hospitals or doctors or specializations found");
-  res.status(200).send({
-    doctors: doctors,
-    doctorSeeMore: doctorSeeMore,
-    hospitals: hospitals,
-    hospitalSeeMore: hospitalSeeMore,
-    specializations: specializations,
-    specializationsSeeMore: specializationsSeeMore,
-  });
 };
 
 //function when pressed on specefic hospital it will return its Specialization
@@ -414,7 +434,9 @@ module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
   const doctors = await Doctor.find({
     hospitalID: id,
     specialization: search,
-  }).select({ name: 1, specialization: 1, _id: 1 });
+    isActive: true,
+  }).select({ _id: 1, name: 1, specialization: 1, rating: 1 });
+
   if (doctors.length === 0) res.status(404).send("No doctors here");
   else res.status(200).send(doctors);
 };
@@ -428,6 +450,7 @@ module.exports.displayHomepage = async (req, res) => {
   const dataSize = 5;
   try {
     const doctor = await Doctor.aggregate([
+      { $match: { isActive: true } },
       {
         $project: {
           _id: 1,
@@ -466,10 +489,7 @@ module.exports.displayHomepage = async (req, res) => {
         hospitalAddress: address,
         averageRating: rating,
       });
-      specializations.push(
-        // specId: specialization[i]._id,
-        specialization[i].name
-      );
+      specializations.push(specialization[i].name);
     }
 
     res.status(200).send({ hospitals, doctors, specializations });
@@ -479,26 +499,27 @@ module.exports.displayHomepage = async (req, res) => {
 };
 
 module.exports.seeAllDoctors = async (req, res) => {
-  var allDoctors = [];
   try {
-    const doctorData = await Doctor.find().select({
+    var allDoctors = [];
+    const doctorData = await Doctor.find({ isActive: true }).select({
       _id: 1,
       name: 1,
       specialization: 1,
       hospitalID: 1,
       rating: 1,
     });
+
     for (var i = 0; i < doctorData.length; i++) {
-      const doctorHospitalData = await Hospital.findById(
+      const { name, address } = await Hospital.findById(
         doctorData[i].hospitalID
       );
       allDoctors.push({
         _id: doctorData[i]._id,
         name: doctorData[i].name,
         specialization: doctorData[i].specialization,
-        doctorHospitalName: doctorHospitalData.name,
-        doctorHospitalAddress: doctorHospitalData.address,
-        averageRating: doctorData[i].rating,
+        doctorHospitalName: name,
+        doctorHospitalAddress: address,
+        rating: doctorData[i].rating,
       });
     }
 
@@ -602,20 +623,25 @@ module.exports.upcomingAppointments = async (req, res) => {
 
     const { newAppointments } = await Patient.findById(id);
     var appointmentDetails = [];
+
     for (var i = 0; i < newAppointments.length; i++) {
-      const { doctor, hospital, date, flowNumber } = await Appointment.findById(
-        newAppointments[i]._id
-      );
-      const d =
+      const { doctor, hospital, date, flowNumber, from, to } =
+        await Appointment.findById(newAppointments[i]._id);
+      console.log(doctor);
+
+      const fullDate =
         date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
       const hospitalData = await Hospital.findById(hospital);
       const doctorData = await Doctor.findById(doctor);
+
       appointmentDetails.push({
         appointmentID: newAppointments[i]._id,
         hospitalName: hospitalData.name,
         drName: doctorData.name,
         specialization: doctorData.specialization,
-        date: d,
+        date: fullDate,
+        from: from,
+        to: to,
         resNum: flowNumber,
       });
     }
@@ -634,77 +660,51 @@ module.exports.upcomingAppointments = async (req, res) => {
 */
 module.exports.editProfile = async (req, res) => {
   // takes id from the reqest body
-  const { id, name, phoneNumber, dateOfBirth, questions } = req.body;
-  const patient = await Patient.findByIdAndUpdate(id, {
+  const {
+    token,
+    name,
+    phoneNumber,
+    // , dateOfBirth, questions
+  } = req.body;
+  const patientId = decodeToken(token);
+  const patient = await Patient.findByIdAndUpdate(patientId, {
     name: name,
     phoneNumber: phoneNumber,
-    dateOfBirth: dateOfBirth,
-    questions: questions,
+    // dateOfBirth: dateOfBirth,
+    // questions: questions,
   });
   if (!patient) return res.status(404).send("Patient not found");
-  res.send(await Patient.findById(id));
+  res.send(await Patient.findById(patientId));
 };
-
-// module.exports.rateDoctor = async (req, res) => {
-//   const { token, doctorId, rate } = req.body;
-//   try {
-//     const patientId = decodeToken(token);
-//     const { name } = await Patient.findOne({ _id: patientId });
-//     const doctor = await Doctor.findOne({ _id: doctorId });
-//     const numberOfReviews = doctor.workingDays.length;
-//     const newRate =
-//       (doctor.rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
-//     await Doctor.findByIdAndUpdate(doctorId, { rating: newRate });
-//     // res.status(200).send({ newRate, name });
-//     res.status(200).send("Rating done");
-//   } catch (err) {
-//     res.status(400).send(err.message);
-//   }
-// };
-
-//Review dr
-// module.exports.reviewDoctor = async (req, res) => {
-//   const { review, rating, doctorID, token } = req.body;
-//   try {
-//     const userID = decodeToken(token);
-//     const { name } = await Patient.findById(userID);
-//     const date = new Date();
-//     const fullDate =
-//       date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
-//     await Doctor.findByIdAndUpdate(
-//       { _id: doctorID },
-//       { $push: { reviews: [name, review, date] } }
-//     );
-//     const { rating } = await Doctor.findById(doctorID);
-//     // const reviewDetails = [
-//     //   { name: name, date: fullDate, rating: rating, review: review },
-//     // ];
-//     // console.log(reviewDetails[0].name);
-//     // res.status(200).send(reviewDetails);
-//     res.status(200).send("Review done");
-//   } catch (err) {
-//     res.status(400).send(err.message);
-//   }
-// };
 
 module.exports.rateAndReview = async (req, res) => {
   const { rate, review, doctorId, token } = req.body;
   try {
     const patientId = decodeToken(token);
+
     const { name } = await Patient.findById(patientId);
     const { rating, reviews } = await Doctor.findById(doctorId);
+
     const numberOfReviews = reviews.length;
+
     const newRate =
       (rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
     const date = new Date();
-    const fullDate =
-      date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
     await Doctor.findByIdAndUpdate(doctorId, {
       rating: newRate,
       $push: {
-        reviews: [{ name: name, rating: rate, review: review, date: fullDate }],
+        reviews: [{ name: name, rating: rate, review: review, date: date }],
       },
     });
+
+    // await Appointment.findByIdAndUpdate(
+    //   appointmentID,
+    //   {
+    //     $set: {
+    //       reviewd: true,
+    //     },
+    //   }
+    // );
     res.status(200).send("Rating and review done");
   } catch (err) {
     res.status(400).send(err.message);
@@ -713,11 +713,23 @@ module.exports.rateAndReview = async (req, res) => {
 
 module.exports.getDoctorDetails = async (req, res) => {
   const doctorId = req.params.id;
+  var doctorData = [];
   var reviewDetails = [];
   var scheduleDetails = [];
 
   try {
-    const { reviews, schedule } = await Doctor.findById(doctorId);
+    const { name, hospitalID, reviews, schedule, rating, specialization } =
+      await Doctor.findById(doctorId);
+
+    const hospitalData = await Hospital.findById(hospitalID);
+    doctorData = {
+      drName: name,
+      specialization: specialization,
+      averageRating: rating,
+      hospitalName: hospitalData.name,
+      hospitalAddress: hospitalData.address,
+    };
+
     for (var i = 0; i < reviews.length; i++) {
       const fullDate =
         reviews[i].date.getDate() +
@@ -740,12 +752,13 @@ module.exports.getDoctorDetails = async (req, res) => {
         "-" +
         schedule[i].date.getFullYear();
       scheduleDetails.push({
-        date: fullDate,
+        date: schedule[i].date,
         from: schedule[i].from,
         to: schedule[i].to,
+        displayDate: fullDate,
       });
     }
-    res.status(200).send({ reviewDetails, scheduleDetails });
+    res.status(200).send({ doctorData, reviewDetails, scheduleDetails });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -754,10 +767,11 @@ module.exports.getDoctorDetails = async (req, res) => {
 module.exports.book = async (req, res) => {
   const { token, drId, date, from, to } = req.body;
   const doctor = await Doctor.findById(drId);
-
   const hospitalId = doctor.hospitalID;
-
   const schedule = doctor.schedule;
+
+  //TODO: a5od el token adwr bi f new app. w kol app ashof 3ndha drId + date + from kda nfs le dr f nfs el m3a
+  // lw fiha date+from kda mynf3sh nfs el m3ad m3 dr mo5tlf
 
   let obj = doctor.schedule.find(
     (o) =>
@@ -767,13 +781,34 @@ module.exports.book = async (req, res) => {
   );
 
   const indexOfScehdule = doctor.schedule.indexOf(obj);
-
   const flowNumber = obj.AppointmentList.length + 1;
 
   try {
     const userId = decodeToken(token);
     const session = await conn.startSession();
     await session.withTransaction(async () => {
+      // const { newAppointments } = await Patient.findById(userId);
+
+      // for (var i = 0; i < newAppointments.length; i++) {
+      //   console.log("im here");
+      //   // console.log(newAppointments.length);
+      //   const { doctor, date, from } = await Appointment.findById(
+      //     newAppointments[i]._id
+      //   );
+      //   console.log(newAppointment[i]._id, doctor, drId);
+      //   /*FIXME: msh byd5ol hena khales
+      //   doctor != drId
+      //   msh 7sah by loop gher mara fa byshof el doctorId mo5tlf
+      //   */
+      //   if (doctor == drId && date == date && from == from) {
+      //     console.log("You cannot book the same appointment twice");
+      //   } else if (date == date && from == from) {
+      //     console.log("You cannot book two appointments at the same time");
+      //   }
+      //   {
+      //     session;
+      //   }
+      // }
       const appointment = await Appointment.create(
         [
           {
@@ -781,8 +816,11 @@ module.exports.book = async (req, res) => {
             patient: userId,
             doctor: drId,
             date: obj.date,
+            from: from,
+            to: to,
             flowNumber: flowNumber,
             hospital: hospitalId,
+            reviewd: false,
           },
         ],
         { session }
@@ -812,28 +850,20 @@ module.exports.book = async (req, res) => {
     });
     //console.log(x);
     session.endSession();
+    res.status(200).send("Appointment successfully booked");
     console.log("success");
   } catch (error) {
     console.log("error");
+    res.status(400).send("Error booking appointment");
   }
 };
 
 module.exports.cancelAppointment = async (req, res) => {
-  const { appointmentID, from, to } = req.body;
+  const appointmentID = req.params.appointmentID;
+
   try {
-    const { patient, doctor, date } = await Appointment.findById(appointmentID);
-    const dr = await Doctor.findById(doctor);
-    const schedule = dr.schedule;
-
-    let obj = dr.schedule.find(
-      (o) =>
-        (o.to === to) &
-        (o.from === from) &
-        (Date.parse(o.date) === Date.parse(date))
-    );
-
-    const indexOfScehdule = dr.schedule.indexOf(obj);
-
+    const { patient, doctor } = await Appointment.findById(appointmentID);
+    const { schedule } = await Doctor.findById(doctor);
     const session = await conn.startSession();
     await session.withTransaction(async () => {
       await Appointment.findByIdAndDelete(appointmentID, { session });
@@ -847,12 +877,13 @@ module.exports.cancelAppointment = async (req, res) => {
         { session }
       );
 
-      for (var i = 0; i < obj.AppointmentList.length; i++) {
-        if (obj.AppointmentList[i] == appointmentID) {
-          obj.AppointmentList.splice(i, 1);
+      for (var i = 0; i < schedule.length; i++) {
+        if (schedule[i].AppointmentList.includes(appointmentID)) {
+          var index = schedule[i].AppointmentList.indexOf(appointmentID);
+          schedule[i].AppointmentList.splice(index, 1);
         }
       }
-      schedule[indexOfScehdule] = obj;
+
       await Doctor.findByIdAndUpdate(
         doctor,
         {
@@ -865,7 +896,6 @@ module.exports.cancelAppointment = async (req, res) => {
     });
     session.endSession();
     res.status(200).send("Appointment cancelled successfully");
-    console.log("success");
   } catch (err) {
     res.status(400).send("Error cancelling appointment");
   }
