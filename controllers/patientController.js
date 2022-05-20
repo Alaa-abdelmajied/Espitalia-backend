@@ -345,19 +345,32 @@ module.exports.patientSearchHospital = async (req, res) => {
   res.send(hospitals);
 };
 
+function calculateAge(dateString) {
+  var today = new Date();
+  var birthDate = new Date(dateString);
+  var age = today.getFullYear() - birthDate.getFullYear();
+  var m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 module.exports.getPatient = async (req, res) => {
   const token = req.params.token;
-
   try {
     const id = decodeToken(token);
-    const patient = await Patient.findById(id).select({
-      name: 1,
-      phoneNumber: 1,
-      email: 1,
-      _id: 0,
-    });
-    // console.log(patient);
-    res.send(patient);
+    const { name, phoneNumber, email, dateOfBirth } = await Patient.findById(
+      id
+    );
+    // const birthdate =
+    //   dateOfBirth.getDate() +
+    //   "-" +
+    //   (dateOfBirth.getMonth() + 1) +
+    //   "-" +
+    //   dateOfBirth.getFullYear();
+    const age = calculateAge(dateOfBirth);
+    res.send({ name, phoneNumber, email, age });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -666,7 +679,8 @@ module.exports.editProfile = async (req, res) => {
     token,
     name,
     phoneNumber,
-    // , dateOfBirth, questions
+    // , dateOfBirth
+    // , questions
   } = req.body;
   const patientId = decodeToken(token);
   const patient = await Patient.findByIdAndUpdate(patientId, {
@@ -680,34 +694,50 @@ module.exports.editProfile = async (req, res) => {
 };
 
 module.exports.rateAndReview = async (req, res) => {
-  const { rate, review, doctorId, token } = req.body;
+  const { rate, review, doctorId, token, appointmentID } = req.body;
   try {
-    const patientId = decodeToken(token);
+    const { reviewed } = await Appointment.findById(appointmentID);
+    if (!reviewed) {
+      const patientId = decodeToken(token);
 
-    const { name } = await Patient.findById(patientId);
-    const { rating, reviews } = await Doctor.findById(doctorId);
+      const { name } = await Patient.findById(patientId);
+      const { rating, reviews } = await Doctor.findById(doctorId);
 
-    const numberOfReviews = reviews.length;
-
-    const newRate =
-      ((rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1)).toFixed(1);
-    const date = new Date();
-    await Doctor.findByIdAndUpdate(doctorId, {
-      rating: newRate,
-      $push: {
-        reviews: [{ name: name, rating: rate, review: review, date: date }],
-      },
-    });
-
-    // await Appointment.findByIdAndUpdate(
-    //   appointmentID,
-    //   {
-    //     $set: {
-    //       reviewd: true,
-    //     },
-    //   }
-    // );
-    res.status(200).send("Rating and review done");
+      const numberOfReviews = reviews.length;
+      const newRate = (
+        (rating * numberOfReviews + Number(rate)) /
+        (numberOfReviews + 1)
+      ).toFixed(1);
+      const date = new Date();
+      const session = await conn.startSession();
+      await session.withTransaction(async () => {
+        await Doctor.findByIdAndUpdate(
+          doctorId,
+          {
+            rating: newRate,
+            $push: {
+              reviews: [
+                { name: name, rating: rate, review: review, date: date },
+              ],
+            },
+          },
+          { session }
+        );
+        await Appointment.findByIdAndUpdate(
+          appointmentID,
+          {
+            $set: {
+              reviewd: true,
+            },
+          },
+          { session }
+        );
+      });
+      session.endSession();
+      res.status(200).send("Rating and review done");
+    } else {
+      res.status(401).send("This appointment has already been rated");
+    }
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -722,8 +752,9 @@ module.exports.getDoctorDetails = async (req, res) => {
   try {
     const { name, hospitalID, reviews, schedule, rating, specialization } =
       await Doctor.findById(doctorId);
-
+    console.log(rating);
     const hospitalData = await Hospital.findById(hospitalID);
+
     doctorData = {
       drName: name,
       specialization: specialization,
@@ -822,7 +853,6 @@ module.exports.book = async (req, res) => {
             to: to,
             flowNumber: flowNumber,
             hospital: hospitalId,
-            reviewd: false,
           },
         ],
         { session }
@@ -902,6 +932,66 @@ module.exports.cancelAppointment = async (req, res) => {
     res.status(400).send("Error cancelling appointment");
   }
 };
+
+// module.exports.cancelAppointment = async (req, res) => {
+//   const { appointmentID } = req.params.appointmentID;
+//   // const { from } = req.params.from;
+//   // const { to } = req.params.to;
+// console.log(appointmentID);
+//   try {
+//     const { patient, doctor, date, from, to } = await Appointment.findById(
+//       appointmentID
+//     );
+//     console.log(patient,doctor,date,from,to);
+//     const { schedule } = await Doctor.findById(doctor);
+//     // const schedule = dr.schedule;
+
+//     let obj = schedule.find(
+//       (o) =>
+//         (o.to === to) &
+//         (o.from === from) &
+//         (Date.parse(o.date) === Date.parse(date))
+//     );
+
+//     console.log(obj);
+//     const indexOfScehdule = schedule.indexOf(obj);
+//     console.log(indexOfScehdule);
+//     // const session = await conn.startSession();
+//     // await session.withTransaction(async () => {
+//     //   await Appointment.findByIdAndDelete(appointmentID, { session });
+//     //   await Patient.findByIdAndUpdate(
+//     //     patient,
+//     //     {
+//     //       $pull: {
+//     //         newAppointments: appointmentID,
+//     //       },
+//     //     },
+//     //     { session }
+//     //   );
+
+//     //   for (var i = 0; i < obj.AppointmentList.length; i++) {
+//     //     if (obj.AppointmentList[i] == appointmentID) {
+//     //       obj.AppointmentList.splice(i, 1);
+//     //     }
+//     //   }
+//     //   schedule[indexOfScehdule] = obj;
+//     //   await Doctor.findByIdAndUpdate(
+//     //     doctor,
+//     //     {
+//     //       $set: {
+//     //         schedule: schedule,
+//     //       },
+//     //     },
+//     //     { session }
+//     //   );
+//     // });
+//     // session.endSession();
+//     // res.status(200).send("Appointment cancelled successfully");
+//     console.log("success");
+//   } catch (err) {
+//     res.status(400).send("Error cancelling appointment");
+//   }
+// };
 
 module.exports.getFlowOfEntrance = async (req, res) => {
   const { doctorId } = req.body;
