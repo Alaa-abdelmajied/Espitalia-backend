@@ -58,16 +58,16 @@ module.exports.DropBloodRequest = async (req, res) => {
 
 module.exports.GetSpecializations = async (req, res) => {
 
-  const { id } = req.body;
+  //const { id } = req.body;
   try {
-    const receptionist= await Receptionist.findOne({_id :id});
+    const receptionist= await Receptionist.findById(req.receptionist._id);
     const hospitalID = await receptionist.hospitalID;
     console.log("Hospital ID:" +hospitalID);
     // to test ; specializations need to be added to some hospitals in database
     const hospital = await Hospital.findOne({_id :"626a7ed1e1a7da1e245abd68"});
     console.log(hospital.specialization);
 
-    res.send(hospital);
+    res.send(hospital.specialization);
   }
   catch (err) {
     res.status(400).send(err);
