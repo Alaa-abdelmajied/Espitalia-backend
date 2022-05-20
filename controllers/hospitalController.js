@@ -5,6 +5,14 @@ const Receptionist = require('../models/Receptionist');
 const Specialization = require('../models/Specialization');
 const jsonwebtoken = require('jsonwebtoken');
 const date = require('date-and-time');
+const nodemailer = require("nodemailer");
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: "espitalia.app.gp",
+        pass: "Espitalia@app.com",
+    },
+});
 
 
 /*
@@ -81,14 +89,15 @@ FIXME:
     the doctors password is not hashed. we need to implement the hash-salt functions in the doctor's model
 */
 module.exports.addDoctor = async (req, res) => {
-    const { error } = Doctor.validate(req.body);
-    console.log('entered');
-    if (error) {
-        console.log(error.details[0].message);
-        return res.status(400).send(error.details[0].message);
-    }
+    // const { error } = Doctor.validate(req.body);
+    // console.log('entered');
+    // if (error) {
+    //     console.log(error.details[0].message);
+    //     return res.status(400).send(error.details[0].message);
+    // }
     //console.log(`ID: ${req.hospital._id}`);
     //console.log(req.body.email);
+    const generatedPassword = genPasword();
     let doctor = await Doctor.findOne({ email: req.body.email });
     //console.log({doctor});
     if (doctor) {
@@ -96,8 +105,10 @@ module.exports.addDoctor = async (req, res) => {
             doctor.isActive = true;
             doctor.schedule = GenerateSchedule(req.body.workingDays);
             doctor.hospitalID = req.hospital._id;
+            doctor.password = generatedPassword;
             doctor.workingDays = req.body.workingDays;
             doctor.save();
+            sendPasswordViaMail(generatedPassword, req.body.email);
             //console.log({doctor});
             res.send(`${doctor} is already exists but we added it to your hospital`);
             //res.send(doctor);
@@ -107,11 +118,12 @@ module.exports.addDoctor = async (req, res) => {
             return res.status(400).send(`${doctor} is already exists and not available`);
         }
     } else {
-        doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'password', 'workingDays']));
+        doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'workingDays']));
         doctor.hospitalID = req.hospital._id;
-        //console.log({doctor});
+        doctor.password = generatedPassword;
         doctor.schedule = GenerateSchedule(req.body.workingDays);
         await doctor.save();
+        sendPasswordViaMail(generatedPassword, req.body.email);
         res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
     }
 }
@@ -218,13 +230,17 @@ module.exports.addReceptionist = async (req, res) => {
     //TODO: make Joi validation for recepitionist
     //const { error } = Receptionist.validate(req.body);
     //if(error) return res.status(400).send(error.details[0].message);
+    const generatedPassword = genPasword();
+
     let receptionist = await Receptionist.findOne({ email: req.body.email });
     if (receptionist) {
         if (!receptionist.isActive) {
             receptionist.isActive = true;
             receptionist.hospitalID = req.hospital._id;
             receptionist.workingDays = req.body.workingDays;
+            receptionist.password = generatedPassword;
             receptionist.save();
+            sendPasswordViaMail(generatedPassword, req.body.email);
             res.send(`${receptionist.name} is activated and added to your hospital`);
         }
         else if (receptionist.hospitalID == req.hospital._id) {
@@ -233,9 +249,11 @@ module.exports.addReceptionist = async (req, res) => {
             return res.status(400).send(`${receptionist.name} is not available`);
         }
     } else {
-        receptionist = new Receptionist(_.pick(req.body, ['name', 'username', 'email', 'password', 'phoneNumber', 'education', 'from', 'workingDays']));
+        receptionist = new Receptionist(_.pick(req.body, ['name', 'username', 'email', 'phoneNumber', 'education', 'from', 'workingDays']));
         receptionist.hospitalID = req.hospital._id;
+        receptionist.password = generatedPassword;
         receptionist.save();
+        sendPasswordViaMail(generatedPassword, req.body.email);
         res.send(`${receptionist.name} is created and added to your hospital`);
     }
 }
@@ -338,6 +356,40 @@ module.exports.activateReceptionist = async (req, res) => {
     receptionist.save();
     res.send(`${receptionist.name} is added to your hospital`);
 
+}
+function genPasword() {
+    var result = '';
+    var alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    var nums = '0123456789';
+    var symbols = '~`!@#$%^&*()_-+={[}]|\\:;"\'<,>.?/';
+    for (var i = 0; i < 5; i++) {
+        result += alpha.charAt(Math.floor(Math.random() * alpha.length));
+    }
+    for (var i = 0; i < 2; i++) {
+        result += nums.charAt(Math.floor(Math.random() * nums.length));
+    }
+    for (var i = 0; i < 1; i++) {
+        result += symbols.charAt(Math.floor(Math.random() * symbols.length));
+    }
+    return result;
+}
+function sendPasswordViaMail(password, empEmail) {
+    const passWordEmail = {
+        from: "espitalia.app.gp@gmail.com",
+        to: empEmail,
+        subject: "Temporary Password",
+        html:
+            "Your new password is " +
+            password +
+            "<br/><br/>Thanks and regards , <br/>      Espitalia",
+    };
+    transporter.sendMail(passWordEmail, function (error, info) {
+        if (error) {
+            console.log("Email" + error);
+        } else {
+            console.log("Email sent: " + info.response);
+        }
+    });
 }
 
 function GenerateSchedule(workingdays) {
