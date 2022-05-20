@@ -8,14 +8,20 @@ const router = Router();
 //TODO: POST request:
 router.post('/login', hospitalController.Login);
 router.post('/logout', auth, hospitalController.Logout);
+
 router.post('/addDoctor', auth, hospitalController.addDoctor);
+
 router.post('/addReceptionist', auth, hospitalController.addReceptionist);
 
 
 //TODO: GET request:
 router.get('/viewDoctors', auth, hospitalController.viewDoctors);
-router.get('/viewReceptionists', auth, hospitalController.viewReceptionists);
+router.get('/getDoctor/:doctorID', auth, hospitalController.getDoctor);
+router.get('/getSpecializations', auth, hospitalController.getSpecializations);
 router.get('/searchDoctors/:search',auth,hospitalController.hospitalSearchDoctor);
+
+router.get('/getReceptionist/:receptID', auth, hospitalController.getReceptionist);
+router.get('/viewReceptionists', auth, hospitalController.viewReceptionists);
 //router.get('/searchReceptionist/:search',auth,hospitalController.hospitalSearchReceptionist);
 
 
@@ -27,5 +33,8 @@ router.put('/addWorkingDay', auth, hospitalController.addWorkingDay);
 
 router.put('/deactivateReceptionist', auth, hospitalController.deactivateReceptionist);
 router.put('/activateReceptionist', auth, hospitalController.activateReceptionist);
+//
+router.put('/removeWorkingDayRecept', auth, hospitalController.removeWorkingDayRecept);
+router.put('/addWorkingDayRecept', auth, hospitalController.addWorkingDayRecept);
 
 module.exports = router;

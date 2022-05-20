@@ -7,6 +7,7 @@ const express = require("express");
 const patientRouters = require("./routes/PatientRoutes");
 const doctorRouters = require("./routes/DoctorRoutes");
 const hospitalRouters = require("./routes/HospitalRoutes");
+const receptionistRouters = require('./routes/ReceptionistRoutes');
 
 const app = express();
 
@@ -15,3 +16,4 @@ app.listen(3000);
 app.use("/patient", patientRouters);
 app.use("/doctor", doctorRouters);
 app.use("/hospital", hospitalRouters);
+app.use('/receptionist', receptionistRouters);

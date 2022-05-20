@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const { isEmail } = require('validator');
 
+const bcrypt = require('bcrypt');
+const jsonwebtoken = require('jsonwebtoken');
+
 const receptionistSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -55,23 +58,50 @@ const receptionistSchema = new mongoose.Schema({
 const Receptionist = mongoose.model('receptionist', receptionistSchema);
 
 //test
-async function createReceptionist() {
-    const user = new Receptionist({
-        name: 'Maram',
-        username: 'maram98',
-        email: 'maram_98@gmail.com',
-        password: 'hiiiiiii',
-        hospital_name: 'Al Andalusia',
-        phone_number: 12345678910,
-        education: 'Faculty of Commerce',
-        from: 'Alexandria, Egypt'
+// async function createReceptionist() {
+//     const user = new Receptionist({
+//         name: 'Maram',
+//         username: 'maram98',
+//         email: 'maram_98@gmail.com',
+//         password: 'hiiiiiii',
+//         hospital_name: 'Al Andalusia',
+//         phone_number: 12345678910,
+//         education: 'Faculty of Commerce',
+//         from: 'Alexandria, Egypt'
 
-    });
+//     });
 
-    const result = await user.save();
-    console.log(result);
+//     const result = await user.save();
+//     console.log(result);
+// }
+
+receptionistSchema.methods.generateAuthToken = function() {
+    const token = jsonwebtoken.sign({_id: this._id}, 'PrivateKey');
+    return token;
 }
 
-//createReceptionist();
+//createReceptionist(); 
+receptionistSchema.pre('save', async function (next) {
+    const salt = await bcrypt.genSalt();
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
+
+receptionistSchema.statics.receptionistLogin = async function (email, password) {
+    const receptionist = await this.findOne({ email });
+    if (receptionist) {
+        //const valid = await bcrypt.compare(password, this.password);
+        console.log(password, this.password);
+        if (password == this.password)
+            return receptionist;
+        else {
+            throw Error('Incorrect email or password');
+        }
+    }
+    else {
+        throw Error('Incorrect email or password');
+    }
+
+}
 
 module.exports = Receptionist;

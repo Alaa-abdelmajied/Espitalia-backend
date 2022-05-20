@@ -273,7 +273,7 @@ module.exports.patientGeneralSerach = async (req, res) => {
 //search be asma2 el drs bas
 module.exports.patientSearchDoctor = async (req, res) => {
   const search = req.params.search;
-  const doctors = await Doctor.find({ name: { $regex: ".*" + search + ".*" } });
+  const doctors = await Doctor.find({ isActive: true, name: { $regex: ".*" + search + ".*" } });
   if (doctors.length === 0)
     return res.status(404).send("No doctors with that name found");
   res.send(doctors);
@@ -307,23 +307,17 @@ module.exports.patientSearchSpecialization = async (req, res) => {
   const search = req.params.search;
   var doctorDetails = [];
   try {
-    const specializations = await Specialization.find({ name: search });
-    console.log(specializations[0].doctorIds);
-    console.log("---");
-    for (var i = 0; i < specializations[0].doctorIds.length; i++) {
-      const { isActive } = await Doctor.findById(
-        specializations[0].doctorIds[i]
-      );
-
+    const specializations = await Specialization.findOne({ name: search });
+    console.log(specializations.doctorIds);
+    for (var i = 0; i < specializations.doctorIds.length; i++) {
+      const { _id, name, specialization, hospitalID, rating, isActive } =
+        await Doctor.findById(specializations.doctorIds[i]);
       if (isActive) {
-        const { name, rating, specialization, _id, hospitalID } =
-          await Doctor.findById(specializations[0].doctorIds[i]);
         const hospitalInfo = await Hospital.findById(hospitalID).select({
           name: 1,
           address: 1,
           _id: 0,
         });
-        console.log(name, rating, specialization, _id, hospitalID);
         doctorDetails.push({
           _id: _id,
           name: name,
@@ -408,7 +402,7 @@ module.exports.isBloodReqUpdated = async (req, res) => {
 
 module.exports.getBloodRequests = async (req, res) => {
   const { skipNumber } = req.params;
-  const limitSize = 3;
+  const limitSize = 4;
   try {
     const bloodRequests = await BloodRequests.find()
       .sort({ date: -1, _id: 1 })
@@ -490,13 +484,14 @@ module.exports.displayHomepage = async (req, res) => {
     ]);
 
     const specialization = await Specialization.aggregate([
+      { $match: { "doctorIds.0": { "$exists": true } } },
       { $project: { _id: 1, name: 1 } },
       { $sample: { size: dataSize } },
     ]);
 
     for (var i = 0; i < dataSize; i++) {
       const { name, address } = await Hospital.findById(doctor[i].hospitalID);
-      const { rating } = await Doctor.findById(doctor[i]._id);
+      // const { rating } = await Doctor.findById(doctor[i]._id);
       hospitals.push({
         _id: hospital[i]._id,
         name: hospital[i].name,
@@ -508,7 +503,7 @@ module.exports.displayHomepage = async (req, res) => {
         speciality: doctor[i].specialization,
         hospitalName: name,
         hospitalAddress: address,
-        averageRating: rating,
+        averageRating: doctor[i].rating,
       });
       specializations.push(specialization[i].name);
     }
@@ -569,11 +564,8 @@ module.exports.seeAllHospitals = async (req, res) => {
 };
 
 module.exports.seeAllSpecializations = async (req, res) => {
-  var allSpecializations = [];
   try {
-    const specializationData = await Specialization.find({
-      doctorIds: doctorIds.length > 0,
-    }).select({
+    const specializationData = await Specialization.find({ "doctorIds.0": { "$exists": true } }).select({
       name: 1,
       _id: 0,
     });
