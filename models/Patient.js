@@ -53,6 +53,9 @@ const patientSchema = new mongoose.Schema({
     loggedIn: {
         type: Boolean,
         default: false
+    },
+    notifications:{
+        type:[mongoose.Types.ObjectId]
     }
 });
 
