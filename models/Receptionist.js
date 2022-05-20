@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const { isEmail } = require('validator');
 
+const bcrypt = require('bcrypt');
+const jsonwebtoken = require('jsonwebtoken');
+
 const receptionistSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -72,6 +75,33 @@ const Receptionist = mongoose.model('receptionist', receptionistSchema);
 //     console.log(result);
 // }
 
-//createReceptionist();
+receptionistSchema.methods.generateAuthToken = function() {
+    const token = jsonwebtoken.sign({_id: this._id}, 'PrivateKey');
+    return token;
+}
+
+//createReceptionist(); 
+receptionistSchema.pre('save', async function (next) {
+    const salt = await bcrypt.genSalt();
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
+
+receptionistSchema.statics.receptionistLogin = async function (email, password) {
+    const receptionist = await this.findOne({ email });
+    if (receptionist) {
+        //const valid = await bcrypt.compare(password, this.password);
+        console.log(password, this.password);
+        if (password == this.password)
+            return receptionist;
+        else {
+            throw Error('Incorrect email or password');
+        }
+    }
+    else {
+        throw Error('Incorrect email or password');
+    }
+
+}
 
 module.exports = Receptionist;
