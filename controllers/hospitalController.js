@@ -377,10 +377,11 @@ function sendPasswordViaMail(password, empEmail) {
     const passWordEmail = {
         from: "espitalia.app.gp@gmail.com",
         to: empEmail,
-        subject: "Temporary Password",
+        subject: "Temporary Password: ",
         html:
             "Your new password is " +
             password +
+            "<br/>please try to change it ASAP for your security"+
             "<br/><br/>Thanks and regards , <br/>      Espitalia",
     };
     transporter.sendMail(passWordEmail, function (error, info) {
