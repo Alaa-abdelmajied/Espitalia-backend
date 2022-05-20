@@ -3,20 +3,23 @@ const mongoose = require('mongoose');
 const bloodRequestSchema = new mongoose.Schema(
     {
 
-        // userID:{
-        //     type:mongoose.Types.ObjectId,
-        // },
+        PatientID: {
+            type: mongoose.Types.ObjectId,
+        },
         hospitalID: {
             type: mongoose.Types.ObjectId,
+            required: true,
+        },
+        receptionistID: {
+            type: mongoose.Types.ObjectId,
+            required: true,
         },
         bloodType: {
             type: String,
         },
         date: {
             type: Date,
-        },
-        quantity: {
-            type: String,
+            default: Date.now
         },
 
     }
