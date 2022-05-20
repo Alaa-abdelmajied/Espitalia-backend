@@ -1,13 +1,12 @@
-const Hospital = require('../models/Hospital');
 const { Doctor, Schedule } = require('../models/Doctor');
 const BloodRequest = require('../models/BloodRequests');
 
 const Receptionist = require('../models/Receptionist');
 const Patient = require('../models/Patient');
-
 const { application } = require('express');
 const { array, date } = require('joi');
 const jwt = require('jsonwebtoken');
+const Hospital = require('../models/Hospital');
 
 
 module.exports.Login = async (req, res) => {
@@ -52,8 +51,26 @@ module.exports.DropBloodRequest = async (req, res) => {
   }
 }
 
-module.exports.EditReservation = async (req,res) => {
+// module.exports.EditReservation = async (req,res) => {
 
+// }
+
+module.exports.GetSpecializations = async (req, res) => {
+
+  const { id } = req.body;
+  try {
+    const receptionist= await Receptionist.findOne({_id :id});
+    const hospitalID = await receptionist.hospitalID;
+    console.log("Hospital ID:" +hospitalID);
+    // to test ; specializations need to be added to some hospitals in database
+    const hospital = await Hospital.findOne({_id :"626a7ed1e1a7da1e245abd68"});
+    console.log(hospital.specialization);
+
+    res.send(hospital);
+  }
+  catch (err) {
+    res.status(400).send(err);
+  }
 
 }
 

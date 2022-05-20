@@ -10,5 +10,6 @@ router.post("/login", receptionistController.Login);
 //router.get("/CancelReservation", receptionistController.CancelReservation);
 router.post("/GenerateBloodRequest", receptionistController.GenerateBloodRequest);
 router.delete("/DropBloodRequest", receptionistController.DropBloodRequest);
-router.post("/EditReservation", receptionistController.EditReservation);
+//router.post("/EditReservation", receptionistController.EditReservation);
+router.get("/GetSpecializations", receptionistController.GetSpecializations);
 module.exports = router;
