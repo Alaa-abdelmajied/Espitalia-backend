@@ -1,6 +1,7 @@
 const Joi = require("joi");
 const mongoose = require("mongoose");
 const { isEmail } = require("validator");
+const bcrypt = require('bcrypt');
 
 //deh ma3mola embedded schema gwa doctor w gwaha hena feh el appointment list
 const scheduleSchema = new mongoose.Schema({
@@ -17,10 +18,10 @@ const doctorSchema = new mongoose.Schema({
     type: String,
     required: [true, "name is required"],
   },
-  userName: {
-    type: String,
-    required: [true, "userName is required"],
-  },
+  // userName: {
+  //   type: String,
+  //   required: [true, "userName is required"],
+  // },
   specialization: {
     type: String,
     required: [true, "specialization is required"],
@@ -54,7 +55,6 @@ const doctorSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, "Please enter a password"],
-    minlength: [6, "Minimum password length is 6 characters"],
   },
   hospitalID: {
     type: mongoose.Types.ObjectId,
@@ -87,6 +87,48 @@ function validate(doctor) {
     specialization: Joid.string().min(3).max(255).required(),
   };
   return Joi.validate(doctor, schema);
+}
+
+doctorSchema.pre('save', async function (next) {
+  const salt = await bcrypt.genSalt();
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+doctorSchema.statics.doctorLogin = async function (email, password) {
+  const dr = await this.findOne({ email });
+  if (dr) {
+      const validPassword = await bcrypt.compare(password, dr.password);
+      if (validPassword) {
+          return dr;
+      }
+      throw Error('Incorrect email or password');
+  }
+  throw Error('Incorrect email or password');
+};
+
+doctorSchema.statics.changePassword = async function (drId, oldPassword, newPassword) {
+  const dr = await this.findOne({ _id: drId });
+  const validPassword = await bcrypt.compare(oldPassword, dr.password);
+  if (validPassword) {
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+      await Doctor.updateOne(dr, {
+          password: hashedPassword
+      });
+      return ('done');
+  }
+  throw Error('Incorrect password');
+}
+
+doctorSchema.statics.forgotPassword = async function (drId, newpassword) {
+  const dr = await this.findOne({ _id: drId });
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(newpassword, salt);
+  await Doctor.updateOne(dr, {
+      password: hashedPassword
+  });
+  return ('done');
 }
 
 const Doctor = mongoose.model("doctor", doctorSchema);
