@@ -1,6 +1,8 @@
 const Joi = require("joi");
 const mongoose = require("mongoose");
 const { isEmail } = require("validator");
+const bcrypt = require('bcrypt');
+
 
 //deh ma3mola embedded schema gwa doctor w gwaha hena feh el appointment list
 const scheduleSchema = new mongoose.Schema({
@@ -77,6 +79,13 @@ const doctorSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+});
+
+doctorSchema.pre('save', async function (next) {
+  const salt = await bcrypt.genSalt();
+  this.password = await bcrypt.hash(this.password, salt);
+  console.log(this.password);
+  next();
 });
 
 function validate(doctor) {

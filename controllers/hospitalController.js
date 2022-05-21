@@ -3,9 +3,13 @@ const _ = require('lodash');
 const { Doctor, Schedule } = require('../models/Doctor');
 const Receptionist = require('../models/Receptionist');
 const Specialization = require('../models/Specialization');
+const ObjectId = require("mongodb").ObjectId;
+
 const jsonwebtoken = require('jsonwebtoken');
 const date = require('date-and-time');
 const nodemailer = require("nodemailer");
+const conn = require("../db");
+
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -89,17 +93,16 @@ FIXME:
     the doctors password is not hashed. we need to implement the hash-salt functions in the doctor's model
 */
 module.exports.addDoctor = async (req, res) => {
-    // const { error } = Doctor.validate(req.body);
-    // console.log('entered');
-    // if (error) {
-    //     console.log(error.details[0].message);
-    //     return res.status(400).send(error.details[0].message);
-    // }
-    //console.log(`ID: ${req.hospital._id}`);
-    //console.log(req.body.email);
+    const { error } = Doctor.validate(req.body);
+    console.log('entered');
+    if (error) {
+        console.log(error.details[0].message);
+        return res.status(400).send(error.details[0].message);
+    }
+
     const generatedPassword = genPasword();
     let doctor = await Doctor.findOne({ email: req.body.email });
-    //console.log({doctor});
+
     if (doctor) {
         if (!doctor.isActive) {
             doctor.isActive = true;
@@ -108,9 +111,31 @@ module.exports.addDoctor = async (req, res) => {
             doctor.password = generatedPassword;
             doctor.workingDays = req.body.workingDays;
             doctor.save();
-            sendPasswordViaMail(generatedPassword, req.body.email);
-            //console.log({doctor});
-            res.send(`${doctor} is already exists but we added it to your hospital`);
+            try {
+                const session = await conn.startSession();
+                await session.withTransaction(async () => {
+                    await doctor.save({ session });
+                    const hospital = await Hospital.findById(req.hospital._id);
+                    if (!hospital.specialization.find((spec) => (spec == doctor.specialization))) {
+                        await Hospital.findByIdAndUpdate(
+                            req.hospital._id,
+                            {
+                                $push: {
+                                    specialization: doctor.specialization
+                                }
+                            }, { session }
+                        );
+                    }
+                });
+                session.endSession();
+                sendPasswordViaMail(generatedPassword, req.body.email);
+                //console.log({doctor});
+                res.send(`${doctor} is already exists but we added it to your hospital`);
+            }
+            catch (error) {
+                console.log(error);
+                res.status(400).send('add failed');
+            }
             //res.send(doctor);
         }
         else if (doctor.hospital == req.hospital._id) return res.status(400).send(`${doctor.name} is already working in your hospital`);
@@ -119,12 +144,40 @@ module.exports.addDoctor = async (req, res) => {
         }
     } else {
         doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'workingDays']));
+        doctor._id = ObjectId();
         doctor.hospitalID = req.hospital._id;
         doctor.password = generatedPassword;
         doctor.schedule = GenerateSchedule(req.body.workingDays);
-        await doctor.save();
-        sendPasswordViaMail(generatedPassword, req.body.email);
-        res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
+        try {
+            const session = await conn.startSession();
+            await session.withTransaction(async () => {
+                await doctor.save({ session });
+                await Specialization.findOneAndUpdate({ name: doctor.specialization }, {
+                    $push: {
+                        doctorIds: doctor._id
+                    }
+                }, { session });
+                const hospital = await Hospital.findById(req.hospital._id);
+                if (!hospital.specialization.find((spec) => (spec == doctor.specialization))) {
+                    await Hospital.findByIdAndUpdate(
+                        req.hospital._id,
+                        {
+                            $push: {
+                                specialization: doctor.specialization
+                            }
+                        }, { session }
+                    );
+                }
+            });
+            sendPasswordViaMail(generatedPassword, req.body.email);
+            session.endSession();
+            res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
+        }
+        catch (error) {
+            console.log(error);
+            res.status(400).send('add failed');
+        }
+        // const x = await Doctor.create(doctor);
     }
 }
 
@@ -381,7 +434,7 @@ function sendPasswordViaMail(password, empEmail) {
         html:
             "Your new password is " +
             password +
-            "<br/>please try to change it ASAP for your security"+
+            "<br/>please try to change it ASAP for your security" +
             "<br/><br/>Thanks and regards , <br/>      Espitalia",
     };
     transporter.sendMail(passWordEmail, function (error, info) {
@@ -398,7 +451,12 @@ function GenerateSchedule(workingdays) {
     let NewSchedule = [];
     //Sat, Sun, Mon, Tue, Wed, Thu
     let datenow = new Date(Date.now());
-    datenow.setTime(0);
+    // console.log('1',datenow);
+    // datenow.setTime(0);
+    datenow.setHours(0);
+    datenow.setMinutes(0);
+    datenow.setSeconds(0);
+    // console.log('2',datenow);
     let dateItr = date.addDays(datenow, counter);
     let newDateForm = date.format(dateItr, 'ddd, MMM DD YYYY');
     let dayName = newDateForm.split(",");

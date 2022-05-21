@@ -12,7 +12,8 @@ router.post("/CreateBloodRequest", receptionistController.CreateBloodRequest);
 
 //GET
 router.get("/GetSpecializations", auth, receptionistController.GetSpecializations);
-router.get("/getDoctorsWithSpecificSpecialization",auth, receptionistController.getDoctorsWithSpecificSpecialization);
+router.get("/getDoctorsWithSpecificSpecialization/:specName",auth, receptionistController.getDoctorsWithSpecificSpecialization);
+router.get("/getDoctor/:id",auth, receptionistController.getDoctor);
 //router.get("/ReviewReservation", receptionistController.ReviewReservation);
 //router.get("/CancelReservation", receptionistController.CancelReservation);
 
