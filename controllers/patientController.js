@@ -231,6 +231,7 @@ module.exports.patientGeneralSerach = async (req, res) => {
 
   var specializations = await Specialization.find({
     name: { $regex: ".*" + search + ".*", $options: "i" },
+    "doctorIds.0": { $exists: true },
   })
     .limit(limitSize)
     .select({ name: 1 });
