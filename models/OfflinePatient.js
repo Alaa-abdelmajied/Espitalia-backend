@@ -6,6 +6,9 @@ const offline = new mongoose.Schema({
     },
     name: {
         type: String
+    },
+    phoneNumber:{
+        type:String
     }
 })
 

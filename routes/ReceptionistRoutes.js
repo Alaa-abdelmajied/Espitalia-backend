@@ -9,6 +9,7 @@ const router = Router();
 router.post("/login", receptionistController.Login);
 router.post("/CreateBloodRequest", receptionistController.CreateBloodRequest);
 //router.post("/EditReservation", receptionistController.EditReservation);
+router.post("/book", auth, receptionistController.book);
 
 //GET
 router.get("/GetSpecializations", auth, receptionistController.GetSpecializations);

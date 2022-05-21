@@ -7,7 +7,11 @@ const { application } = require('express');
 const { array, date } = require('joi');
 const jwt = require('jsonwebtoken');
 const Hospital = require('../models/Hospital');
+const Appointment = require('../models/Appointment');
+const OfflinePatient = require('../models/OfflinePatient');
+const ObjectId = require("mongodb").ObjectId;
 
+const conn = require("../db");
 
 module.exports.Login = async (req, res) => {
   const { email, password } = req.body;
@@ -106,6 +110,76 @@ module.exports.getDoctor = async (req, res) => {
   catch (error) {
     res.status(404).send('not found');
   }
+}
+
+module.exports.book = async (req, res) => {
+  const { patientPhoneNumber, patientName, drId, date, from, to } = req.body;
+  //console.log(req.body);
+  const doctor = await Doctor.findById(drId);
+  const hospitalId = doctor.hospitalID;
+  const schedule = doctor.schedule;
+
+  let obj = doctor.schedule.find(
+    (o) =>
+      (o.to === to) &
+      (o.from === from) &
+      (Date.parse(o.date) === Date.parse(date))
+  );
+  //console.log(obj);
+  const indexOfScehdule = doctor.schedule.indexOf(obj);
+  const flowNumber = obj.AppointmentList.length + 1;
+  // console.log(flowNumber);
+  try {
+    const session = await conn.startSession();
+    await session.withTransaction(async () => {
+      const P_id = ObjectId();
+      const newPatient = await OfflinePatient.create(
+        [{
+          _id: P_id,
+          name: patientName,
+          phoneNumber: patientPhoneNumber
+        }], { session }
+      );
+      // console.log("success");
+      const appointment = await Appointment.create(
+        [
+          {
+            _id: ObjectId(),
+            patient: P_id,
+            doctor: drId,
+            date: obj.date,
+            from: from,
+            to: to,
+            flowNumber: flowNumber,
+            hospital: hospitalId,
+            reviewd: false,
+          }],
+
+        { session }
+      );
+      obj.AppointmentList.push(appointment[0]._id);
+      schedule[indexOfScehdule] = obj;
+
+      await Doctor.findByIdAndUpdate(
+        drId,
+        {
+          $set: {
+            schedule: schedule,
+          },
+        },
+        { session }
+      );
+
+    });
+    session.endSession();
+    res.status(200).send("Appointment successfully booked");
+
+  } catch (error) {
+    console.log("error");
+    res.status(400).send("Error booking appointment");
+  }
+
+
 }
 
 // module.exports.Logout = async (req, res) => {
