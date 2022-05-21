@@ -373,7 +373,7 @@ module.exports.getPatient = async (req, res) => {
       "-" +
       dateOfBirth.getFullYear();
     const age = calculateAge(dateOfBirth);
-    res.send({ name, phoneNumber, email, birthdate,age });
+    res.send({ name, phoneNumber, email, birthdate, age });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -588,14 +588,14 @@ module.exports.selectReport = async (req, res) => {
       await Appointment.findById(appointmentID);
     const doctorData = await Doctor.findById(doctor);
     const hospitalData = await Hospital.findById(hospital);
-    const d =
+    const fullDate =
       date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
     const appointmentDetails = {
       drId: doctorData._id,
       hospitalName: hospitalData.name,
       drName: doctorData.name,
       specialization: doctorData.specialization,
-      date: d,
+      date: fullDate,
       diagnosis: report,
       prescription: prescription,
     };
@@ -614,10 +614,10 @@ module.exports.oldAppointments = async (req, res) => {
     const { oldAppointments } = await Patient.findById(id);
     var appointmentDetails = [];
     for (var i = 0; i < oldAppointments.length; i++) {
-      const { doctor, hospital, date } = await Appointment.findById(
+      const { doctor, hospital, date, reviewd } = await Appointment.findById(
         oldAppointments[i]._id
       );
-      const d =
+      const fullDate =
         date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
       const hospitalData = await Hospital.findById(hospital);
       const doctorData = await Doctor.findById(doctor);
@@ -626,7 +626,8 @@ module.exports.oldAppointments = async (req, res) => {
         hospitalName: hospitalData.name,
         drName: doctorData.name,
         specialization: doctorData.specialization,
-        date: d,
+        date: fullDate,
+        reviewed: reviewd,
       });
     }
     res.status(200).send(appointmentDetails);
@@ -699,50 +700,26 @@ module.exports.editProfile = async (req, res) => {
 };
 
 module.exports.rateAndReview = async (req, res) => {
-  const { rate, review, doctorId, token, appointmentID } = req.body;
+  const { rate, review, doctorId, token } = req.body;
   try {
-    const { reviewed } = await Appointment.findById(appointmentID);
-    if (!reviewed) {
-      const patientId = decodeToken(token);
+    const patientId = decodeToken(token);
 
-      const { name } = await Patient.findById(patientId);
-      const { rating, reviews } = await Doctor.findById(doctorId);
+    const { name } = await Patient.findById(patientId);
+    const { rating, reviews } = await Doctor.findById(doctorId);
 
-      const numberOfReviews = reviews.length;
-      const newRate = (
-        (rating * numberOfReviews + Number(rate)) /
-        (numberOfReviews + 1)
-      ).toFixed(1);
-      const date = new Date();
-      const session = await conn.startSession();
-      await session.withTransaction(async () => {
-        await Doctor.findByIdAndUpdate(
-          doctorId,
-          {
-            rating: newRate,
-            $push: {
-              reviews: [
-                { name: name, rating: rate, review: review, date: date },
-              ],
-            },
-          },
-          { session }
-        );
-        await Appointment.findByIdAndUpdate(
-          appointmentID,
-          {
-            $set: {
-              reviewd: true,
-            },
-          },
-          { session }
-        );
-      });
-      session.endSession();
-      res.status(200).send("Rating and review done");
-    } else {
-      res.status(401).send("This appointment has already been rated");
-    }
+    const numberOfReviews = reviews.length;
+
+    const newRate =
+      (rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
+    const date = new Date();
+    await Doctor.findByIdAndUpdate(doctorId, {
+      rating: newRate,
+      $push: {
+        reviews: [{ name: name, rating: rate, review: review, date: date }],
+      },
+    });
+
+    res.status(200).send("Rating and review done");
   } catch (err) {
     res.status(400).send(err.message);
   }
