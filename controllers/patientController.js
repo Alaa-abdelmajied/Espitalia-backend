@@ -273,7 +273,10 @@ module.exports.patientGeneralSerach = async (req, res) => {
 //search be asma2 el drs bas
 module.exports.patientSearchDoctor = async (req, res) => {
   const search = req.params.search;
-  const doctors = await Doctor.find({ isActive: true, name: { $regex: ".*" + search + ".*" } });
+  const doctors = await Doctor.find({
+    isActive: true,
+    name: { $regex: ".*" + search + ".*" },
+  });
   if (doctors.length === 0)
     return res.status(404).send("No doctors with that name found");
   res.send(doctors);
@@ -363,14 +366,14 @@ module.exports.getPatient = async (req, res) => {
     const { name, phoneNumber, email, dateOfBirth } = await Patient.findById(
       id
     );
-    // const birthdate =
-    //   dateOfBirth.getDate() +
-    //   "-" +
-    //   (dateOfBirth.getMonth() + 1) +
-    //   "-" +
-    //   dateOfBirth.getFullYear();
+    const birthdate =
+      dateOfBirth.getDate() +
+      "-" +
+      (dateOfBirth.getMonth() + 1) +
+      "-" +
+      dateOfBirth.getFullYear();
     const age = calculateAge(dateOfBirth);
-    res.send({ name, phoneNumber, email, age });
+    res.send({ name, phoneNumber, email, birthdate,age });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -484,7 +487,7 @@ module.exports.displayHomepage = async (req, res) => {
     ]);
 
     const specialization = await Specialization.aggregate([
-      { $match: { "doctorIds.0": { "$exists": true } } },
+      { $match: { "doctorIds.0": { $exists: true } } },
       { $project: { _id: 1, name: 1 } },
       { $sample: { size: dataSize } },
     ]);
@@ -565,7 +568,9 @@ module.exports.seeAllHospitals = async (req, res) => {
 
 module.exports.seeAllSpecializations = async (req, res) => {
   try {
-    const specializationData = await Specialization.find({ "doctorIds.0": { "$exists": true } }).select({
+    const specializationData = await Specialization.find({
+      "doctorIds.0": { $exists: true },
+    }).select({
       name: 1,
       _id: 0,
     });
