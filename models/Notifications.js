@@ -10,9 +10,11 @@ const notificationSchema = new mongoose.Schema({
     date: {
         type: Date,
     },
-    patientID: {
+    userID: {
         type: mongoose.Types.ObjectId,
-    }
+    },
+
+
 })
 
 const Notification = mongoose.model('notification', notificationSchema);

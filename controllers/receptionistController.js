@@ -1,6 +1,5 @@
 const { Doctor, Schedule } = require('../models/Doctor');
 const BloodRequest = require('../models/BloodRequests');
-
 const Receptionist = require('../models/Receptionist');
 const Patient = require('../models/Patient');
 const { application } = require('express');
@@ -9,7 +8,10 @@ const jwt = require('jsonwebtoken');
 const Hospital = require('../models/Hospital');
 const Appointment = require('../models/Appointment');
 const OfflinePatient = require('../models/OfflinePatient');
+const Notification = require('../models/Notifications');
+
 const ObjectId = require("mongodb").ObjectId;
+
 
 const conn = require("../db");
 
@@ -182,19 +184,53 @@ module.exports.book = async (req, res) => {
 
 }
 
+module.exports.GetReceptionistProfile = async (req, res) => {
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id);
+    res.send(receptionist);
+  }
+  catch (error) {
+    res.status(400).send("No receptionist found");
+  }
+}
+
+module.exports.createNotification = async (req, res) => {
+  const { title, body, userID } = req.body;
+  try {
+    const notification = await Notification.create({
+      title,
+      body,
+      userID
+    });
+    res.send(notification);
+    console.log(notification);
+
+  }
+  catch (err) {
+    res.status(400).send(err);
+  }
+}
+
+
+module.exports.GetNotifications = async (req, res) => {
+
+  try {
+    const notification = await Notification.find({ userID: req.receptionist._id });
+    console.log(notification);
+    res.send(notification);
+  }
+  catch (error) {
+    res.status(400).send("No notifications available");
+  }
+
+}
+
 // module.exports.Logout = async (req, res) => {
 // }
 
 // module.exports.ConfirmAttendance = async (req,res) => {
-
 // }
-
-// module.exports.AddOfflineReservation = async (req,res) => {
-
-// }
-
 // module.exports.TrackFlow = async (req,res) =>{
-
 // }
 
 
