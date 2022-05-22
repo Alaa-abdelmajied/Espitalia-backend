@@ -294,18 +294,6 @@ module.exports.searchSpecialization = async (req, res) => {
   res.send({ specializations: specializations });
 };
 
-// module.exports.searchSpecialization = async (req, res) => {
-//   const search = req.params.specialization;
-//   try {
-//     var specializations = await Specialization.find({
-//       name: { $regex: ".*" + search + ".*", $options: "i" },
-//     });
-//     res.status(200).send(specializations);
-//   } catch (error) {
-//     res.status(404).send("No specialzations found");
-//   }
-// };
-
 //search be specialization table
 module.exports.patientSearchSpecialization = async (req, res) => {
   const search = req.params.search;
@@ -343,10 +331,21 @@ module.exports.patientSearchHospital = async (req, res) => {
   const search = req.params.search;
   const hospitals = await Hospital.find({
     name: { $regex: ".*" + search + ".*" },
-  });
+  }).select({name:1,address:1,_id:1});
+
+  var hospitalResult=[];
+  for (var i = 0; i < hospitals.length; i++) {
+    hospitalResult.push({
+      hospitalID: hospitals[i]._id,
+      hospitalName: hospitals[i].name,
+      address: hospitals[i].address,
+    });
+  }
+
   if (hospitals.length === 0)
     return res.status(404).send("No Hospitals with that name found");
-  res.send(hospitals);
+
+  res.send(hospitalResult);
 };
 
 function calculateAge(dateString) {
@@ -585,7 +584,7 @@ module.exports.seeAllSpecializations = async (req, res) => {
 module.exports.selectReport = async (req, res) => {
   const appointmentID = req.params.id;
   try {
-    const { doctor, hospital, date, report, prescription } =
+    const { doctor, hospital, date, report, prescription, reviewd } =
       await Appointment.findById(appointmentID);
     const doctorData = await Doctor.findById(doctor);
     const hospitalData = await Hospital.findById(hospital);
@@ -599,6 +598,7 @@ module.exports.selectReport = async (req, res) => {
       date: fullDate,
       diagnosis: report,
       prescription: prescription,
+      reviewed: reviewd,
     };
     res.status(200).send(appointmentDetails);
   } catch (err) {
@@ -615,7 +615,7 @@ module.exports.oldAppointments = async (req, res) => {
     const { oldAppointments } = await Patient.findById(id);
     var appointmentDetails = [];
     for (var i = 0; i < oldAppointments.length; i++) {
-      const { doctor, hospital, date, reviewd } = await Appointment.findById(
+      const { doctor, hospital, date } = await Appointment.findById(
         oldAppointments[i]._id
       );
       const fullDate =
@@ -628,7 +628,6 @@ module.exports.oldAppointments = async (req, res) => {
         drName: doctorData.name,
         specialization: doctorData.specialization,
         date: fullDate,
-        reviewed: reviewd,
       });
     }
     res.status(200).send(appointmentDetails);
@@ -701,7 +700,7 @@ module.exports.editProfile = async (req, res) => {
 };
 
 module.exports.rateAndReview = async (req, res) => {
-  const { rate, review, doctorId, token } = req.body;
+  const { rate, review, doctorId, token, appointmentID } = req.body;
   try {
     const patientId = decodeToken(token);
 
@@ -710,13 +709,28 @@ module.exports.rateAndReview = async (req, res) => {
 
     const numberOfReviews = reviews.length;
 
-    const newRate =
-      (rating * numberOfReviews + Number(rate)) / (numberOfReviews + 1);
+    const newRate = (
+      (rating * numberOfReviews + Number(rate)) /
+      (numberOfReviews + 1)
+    ).toFixed(1);
     const date = new Date();
     await Doctor.findByIdAndUpdate(doctorId, {
       rating: newRate,
       $push: {
-        reviews: [{ name: name, rating: rate, review: review, date: date }],
+        reviews: [
+          {
+            name: name,
+            rating: rate,
+            review: review,
+            date: date,
+          },
+        ],
+      },
+    });
+
+    await Appointment.findByIdAndUpdate(appointmentID, {
+      $set: {
+        reviewd: true,
       },
     });
 

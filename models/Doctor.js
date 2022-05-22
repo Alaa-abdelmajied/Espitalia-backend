@@ -1,7 +1,8 @@
 const Joi = require("joi");
 const mongoose = require("mongoose");
 const { isEmail } = require("validator");
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
+const jsonwebtoken = require("jsonwebtoken");
 
 //deh ma3mola embedded schema gwa doctor w gwaha hena feh el appointment list
 const scheduleSchema = new mongoose.Schema({
@@ -28,6 +29,7 @@ const doctorSchema = new mongoose.Schema({
   },
   rating: {
     type: Number,
+    default: 0,
   },
   reviews: {
     type: [
@@ -79,6 +81,20 @@ const doctorSchema = new mongoose.Schema({
   },
 });
 
+doctorSchema.methods.generateAuthToken = function () {
+  /*
+    FIXME:
+        the private key should be an environment variable
+    */
+  const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
+  return token;
+};
+
+doctorSchema.methods.decodeToken = function (token) {
+  const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+  return decodedToken;
+};
+
 function validate(doctor) {
   const schema = {
     name: Joi.string().min(3).max(255).required(),
@@ -89,7 +105,7 @@ function validate(doctor) {
   return Joi.validate(doctor, schema);
 }
 
-doctorSchema.pre('save', async function (next) {
+doctorSchema.pre("save", async function (next) {
   const salt = await bcrypt.genSalt();
   this.password = await bcrypt.hash(this.password, salt);
   next();
@@ -98,38 +114,42 @@ doctorSchema.pre('save', async function (next) {
 doctorSchema.statics.doctorLogin = async function (email, password) {
   const dr = await this.findOne({ email });
   if (dr) {
-      const validPassword = await bcrypt.compare(password, dr.password);
-      if (validPassword) {
-          return dr;
-      }
-      throw Error('Incorrect email or password');
+    const validPassword = await bcrypt.compare(password, dr.password);
+    if (validPassword) {
+      return dr;
+    }
+    throw Error("Incorrect email or password");
   }
-  throw Error('Incorrect email or password');
+  throw Error("Incorrect email or password");
 };
 
-doctorSchema.statics.changePassword = async function (drId, oldPassword, newPassword) {
+doctorSchema.statics.changePassword = async function (
+  drId,
+  oldPassword,
+  newPassword
+) {
   const dr = await this.findOne({ _id: drId });
   const validPassword = await bcrypt.compare(oldPassword, dr.password);
   if (validPassword) {
-      const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(newPassword, salt);
-      await Doctor.updateOne(dr, {
-          password: hashedPassword
-      });
-      return ('done');
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    await Doctor.updateOne(dr, {
+      password: hashedPassword,
+    });
+    return "done";
   }
-  throw Error('Incorrect password');
-}
+  throw Error("Incorrect password");
+};
 
 doctorSchema.statics.forgotPassword = async function (drId, newpassword) {
   const dr = await this.findOne({ _id: drId });
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(newpassword, salt);
   await Doctor.updateOne(dr, {
-      password: hashedPassword
+    password: hashedPassword,
   });
-  return ('done');
-}
+  return "done";
+};
 
 const Doctor = mongoose.model("doctor", doctorSchema);
 const Schedule = mongoose.model("Schedule", scheduleSchema);
