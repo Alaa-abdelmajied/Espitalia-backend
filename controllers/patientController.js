@@ -288,7 +288,8 @@ module.exports.searchSpecialization = async (req, res) => {
   const search = req.params.search;
   var specializations = await Specialization.find({
     name: { $regex: ".*" + search + ".*", $options: "i" },
-  }).select({ name: 1 });
+    "doctorIds.0": { $exists: true },
+  }).select({ _id: 0, name: 1 });
   if (specializations.length === 0)
     return res.status(404).send("No specializations with that name found");
   res.send({ specializations: specializations });
