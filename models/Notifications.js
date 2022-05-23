@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const notificationSchema = new mongoose.Schema({
     title: {
@@ -9,6 +9,7 @@ const notificationSchema = new mongoose.Schema({
     },
     date: {
         type: Date,
+        default: Date.now(),
     },
     userID: {
         type: mongoose.Types.ObjectId,
@@ -17,5 +18,5 @@ const notificationSchema = new mongoose.Schema({
 
 })
 
-const Notification = mongoose.model('notification', notificationSchema);
+const Notification = mongoose.model("notification", notificationSchema);
 module.exports = Notification;

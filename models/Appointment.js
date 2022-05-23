@@ -21,15 +21,18 @@ const appointmentSchema = new mongoose.Schema({
   },
   report: {
     type: String,
+    default:''
   },
   prescription: {
     type: String,
+    default:''
   },
   flowNumber: {
     type: Number,
   },
   reviewd: {
     type: Boolean,
+    default: false,
   },
 });
 
