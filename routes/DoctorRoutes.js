@@ -5,6 +5,13 @@ const router = Router();
 
 router.post("/login", doctorController.Login);
 router.get("/doctor", doctorController.getDoctor);
-router.get("/upcomingAppointments", doctorController.getUpcomingAppointments);
+router.get(
+  "/currentDayAppointments",
+  doctorController.getCurrentDayAppointments
+);
+// router.get(
+//   "/doctorUpcomingAppointments",
+//   doctorController.getUpcomingAppointments
+// );
 
 module.exports = router;

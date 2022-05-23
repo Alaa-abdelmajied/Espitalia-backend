@@ -17,7 +17,6 @@ const ObjectId = require("mongodb").ObjectId;
 const date = require("date-and-time");
 const { reset } = require("nodemon");
 const { object } = require("joi");
-const { upcomingAppointments } = require("./patientController");
 require("dotenv").config();
 
 module.exports.Login = async (req, res) => {
@@ -47,7 +46,7 @@ module.exports.getDoctor = async (req, res) => {
       averageRating: rating,
       phoneNumber: phoneNumber,
       email: email,
-      schedule: workingDays,
+      workingDays: workingDays,
       hospitalName: hospitalName.name,
     });
   } catch (err) {
@@ -55,75 +54,83 @@ module.exports.getDoctor = async (req, res) => {
   }
 };
 
-module.exports.getUpcomingAppointments = async (req, res) => {
+
+/*FIXME: only show shifts that has appointments*/
+module.exports.getCurrentDayAppointments = async (req, res) => {
   const token = req.header("x-auth-token");
   console.log(token);
   const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
-  var upcomingAppointments = [];
+  var currentDayAppointments = [];
   try {
     const { schedule } = await Doctor.findById(decodedToken);
     for (var i = 0; i < schedule.length; i++) {
-      console.log(schedule[i].AppointmentList);
-      for (var j = 0; j < schedule[i].AppointmentList.length; j++) {
-        console.log(schedule[i].AppointmentList[j]._id);
-        const { patient } = await Appointment.findById(
-          schedule[i].AppointmentList[j]._id
-        );
-        const { name, oldAppointments } = await Patient.findById(patient);
-        const { report, prescription } = await Appointment.findById(
-          oldAppointments[j]._id
-        );
-        console.log(report, prescription);
-        upcomingAppointments.push({
-          patientName: name,
-          oldAppointments: oldAppointments,
+      console.log(schedule[i].date);
+      if (schedule[i].date.toDateString() === new Date().toDateString()) {
+        console.log("here");
+        var currentShiftPatients = [];
+        if (schedule[i].AppointmentList.length > 0) {
+          for (var j = 0; j < schedule[i].AppointmentList.length; j++) {
+            console.log(schedule[i].AppointmentList[j]);
+            const { patient } = await Appointment.findById(
+              schedule[i].AppointmentList[j]
+            );
+            const { name } = await Patient.findById(patient);
+            currentShiftPatients.push({
+              patientName: name,
+            });
+          }
+        }
+        currentDayAppointments.push({
+          shift: { from: schedule[i].from, to: schedule[i].to },
+          currentShiftPatients,
         });
       }
-      // const {report,patient,report}=await Appointment.findById(schedule[i].AppointmentList._id);
     }
+    if (currentDayAppointments.length === 0)
+      return res.status(404).send("No Appointments today :)");
 
-    // console.log(schedule);
-    // let obj = schedule[0].find({ date: { $gt: "2022-05-01T22:00:00Z" } });
-    // console.log(obj);
-
-    res.send(upcomingAppointments);
+    res.status(200).send(currentDayAppointments);
   } catch (err) {
     res.status(400).send(err.message);
   }
 };
 
-module.exports.upcomingAppointments = async (req, res) => {
-  const token = req.params.token;
-  try {
-    const id = decodeToken(token);
 
-    const { newAppointments } = await Patient.findById(id);
-    var appointmentDetails = [];
+/*TODO: continue + fix*/
 
-    for (var i = 0; i < newAppointments.length; i++) {
-      const { doctor, hospital, date, flowNumber, from, to } =
-        await Appointment.findById(newAppointments[i]._id);
-      console.log(doctor);
+// module.exports.getUpcomingAppointments = async (req, res) => {
+//   const token = req.header("x-auth-token");
+//   const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+//   var upcomingAppointments = [];
+//   try {
+//     const { schedule } = await Doctor.findById(decodedToken);
+//     for (var i = 0; i < schedule.length; i++) {
+//       if (
+//         schedule[i].date.toDateString() > new Date().toDateString() &&
+//         schedule[i].AppointmentList.length > 0
+//       ) {
+//         const appointmentDate = schedule[i].date.toDateString();
+//         // console.log(appointmentDate);
+//         if (schedule[i].AppointmentList.length > 0) {
+//           for (var j = 0; j < schedule[i].AppointmentList.length; j++) {
+//             console.log(schedule[i].AppointmentList[j]);
+//             const { patient } = await Appointment.findById(
+//               schedule[i].AppointmentList[j]
+//             );
+//             const { name } = await Patient.findById(patient);
+//             upcomingAppointments.push({
+//               date: appointmentDate,
+//               patientName: name,
+//             });
+//           }
+//         }
+//       }
+//     }
+//     if (upcomingAppointments.length === 0)
+//       return res.status(404).send("No upcoming appointments");
 
-      const fullDate =
-        date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
-      const hospitalData = await Hospital.findById(hospital);
-      const doctorData = await Doctor.findById(doctor);
-
-      appointmentDetails.push({
-        appointmentID: newAppointments[i]._id,
-        hospitalName: hospitalData.name,
-        drName: doctorData.name,
-        specialization: doctorData.specialization,
-        date: fullDate,
-        from: from,
-        to: to,
-        resNum: flowNumber,
-      });
-    }
-    res.status(200).send(appointmentDetails);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
-
+//     res.status(200).send(upcomingAppointments);
+//   } catch (err) {
+//     res.status(400).send(err.message);
+//   }
+// };
