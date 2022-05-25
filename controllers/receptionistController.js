@@ -2,7 +2,6 @@ const { Doctor, Schedule } = require('../models/Doctor');
 const BloodRequest = require('../models/BloodRequests');
 const Receptionist = require('../models/Receptionist');
 const Patient = require('../models/Patient');
-const { application } = require('express');
 const { array, date } = require('joi');
 const jwt = require('jsonwebtoken');
 const Hospital = require('../models/Hospital');
@@ -180,8 +179,81 @@ module.exports.book = async (req, res) => {
     console.log("error");
     res.status(400).send("Error booking appointment");
   }
+}
 
+module.exports.getAppointmentsList = async (req, res) => {
+  const { doctorID, scheduleID } = req.params;
+  // console.log(req.params);
+  try {
+    const doctor = await Doctor.findById(doctorID);
+    // console.log(doctor.schedule);
+    const schedule = doctor.schedule.find((o) => (o._id == scheduleID));
+    const appointments = [];
+    var result = [];
+    for (var i = 0; i < schedule.AppointmentList.length; i++) {
+      const appointment = await Appointment.findById(schedule.AppointmentList[i]);
+      var patient = await Patient.findById(appointment.patient).select('name _id phoneNumber');
+      if (patient == null) {
+        patient = await OfflinePatient.findById(appointment.patient).select('name _id phoneNumber');
+      }
+      const tuple = {
+        _id: appointment._id,
+        name: patient.name,
+        phoneNumber: patient.phoneNumber,
+        flowNumber: appointment.flowNumber
+      };
+      result.push(tuple);
+    }
+    // console.log(result);
+    res.send(result);
+  }
+  catch (error) {
+    res.status(404).send('ERROR: not Found');
+  }
+}
 
+module.exports.cancelAppointment = async (req, res) => {
+  const { appointmentID } = req.body;
+  try {
+    const { patient, doctor } = await Appointment.findById(appointmentID);
+    const { schedule } = await Doctor.findById(doctor);
+    const session = await conn.startSession();
+    await session.withTransaction(async () => {
+      await Appointment.findByIdAndDelete(appointmentID, { session });
+      var patient_ = await OfflinePatient.findById(patient);
+      if (patient_ == null) {
+        await Patient.findByIdAndUpdate(
+          patient,
+          {
+            $pull: {
+              newAppointments: appointmentID,
+            },
+          },
+          { session }
+        );
+      }
+      for (var i = 0; i < schedule.length; i++) {
+        if (schedule[i].AppointmentList.includes(appointmentID)) {
+          var index = schedule[i].AppointmentList.indexOf(appointmentID);
+          schedule[i].AppointmentList.splice(index, 1);
+        }
+      }
+      await Doctor.findByIdAndUpdate(
+        doctor,
+        {
+          $set: {
+            schedule: schedule,
+          },
+        },
+        { session }
+      );
+    });
+    session.endSession();
+    res.status(200).send("Appointment cancelled successfully");
+  }
+  catch (error) {
+    res.status(400).send("Error cancelling appointment");
+  }
 }
 
 module.exports.GetReceptionistProfile = async (req, res) => {
