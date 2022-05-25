@@ -20,7 +20,7 @@ module.exports.Login = async (req, res) => {
   try {
     const receptionist = await Receptionist.findOne({ email });
     if (!receptionist) return res.status(400).send('bad request');
-
+    //FIXME: no checking the password
     const token = jwt.sign({ _id: receptionist._id }, 'PrivateKey');
     // res.send(token);
     res.header('x-auth-token', token).send('Logged in');
@@ -223,6 +223,16 @@ module.exports.GetNotifications = async (req, res) => {
     res.status(400).send("No notifications available");
   }
 
+}
+
+module.exports.getMyData = async (req, res) => {
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id).select('-password');
+    res.send(receptionist);
+  }
+  catch (error) {
+    res.status(404).send('not found');
+  }
 }
 
 // module.exports.Logout = async (req, res) => {

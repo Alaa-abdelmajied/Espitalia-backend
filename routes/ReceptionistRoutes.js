@@ -17,6 +17,7 @@ router.get("/GetSpecializations", auth, receptionistController.GetSpecialization
 router.get("/getDoctorsWithSpecificSpecialization/:specName", auth, receptionistController.getDoctorsWithSpecificSpecialization);
 router.get("/getDoctor/:id", auth, receptionistController.getDoctor);
 router.get("/GetReceptionistProfile", auth, receptionistController.GetReceptionistProfile);
+router.get("/getMyData", auth, receptionistController.getMyData);
 
 router.get("/GetNotifications", auth, receptionistController.GetNotifications);
 //router.get("/ReviewReservation", receptionistController.ReviewReservation);
