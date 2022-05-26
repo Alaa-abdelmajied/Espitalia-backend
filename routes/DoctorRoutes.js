@@ -9,9 +9,9 @@ router.get(
   "/currentDayAppointments",
   doctorController.getCurrentDayAppointments
 );
-// router.get(
-//   "/doctorUpcomingAppointments",
-//   doctorController.getUpcomingAppointments
-// );
+router.get(
+  "/doctorUpcomingAppointments",
+  doctorController.getUpcomingAppointments
+);
 
 module.exports = router;
