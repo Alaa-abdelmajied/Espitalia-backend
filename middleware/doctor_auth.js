@@ -6,6 +6,8 @@ module.exports = function validateToken(req, res, next) {
     try{
         const decoded = jsonwebtoken.verify(token, "PrivateKey").id;
         req.doctor = decoded;
+        console.log(decoded);
+        console.log(req.doctor);
         //console.log(req.hospital);
         next();
     }catch(error) {

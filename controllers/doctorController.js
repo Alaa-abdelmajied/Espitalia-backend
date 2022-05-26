@@ -52,12 +52,11 @@ module.exports.getDoctor = async (req, res) => {
 
 /*FIXME: way of returning data + only show shifts that has appointments*/
 module.exports.getCurrentDayAppointments = async (req, res) => {
-  const token = req.header("x-auth-token");
-  console.log(token);
-  const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+  console.log(req.doctor);
+  // const token = req.header("x-auth-token");
+  // console.log(token);
+  // const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
   var currentDayAppointments = [];
-
-
   try {
     const { schedule } = await Doctor.findById(req.doctor);
     for (var i = 0; i < schedule.length; i++) {
@@ -72,7 +71,11 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
               schedule[i].AppointmentList[j]
             );
             const { name } = await Patient.findById(patient);
-            patients.push({patientName:name});
+            patients.push({
+              patientID: patient,
+              appointmentID: schedule[i].AppointmentList[j],
+              patientName: name,
+            });
           }
         }
         currentDayAppointments.push({
@@ -91,14 +94,13 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
   }
 };
 
-
 module.exports.getUpcomingAppointments = async (req, res) => {
-  const token = req.header("x-auth-token");
-  const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+  // const token = req.header("x-auth-token");
+  // const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
   var upcomingAppointments = [];
 
   try {
-    const { schedule } = await Doctor.findById(decodedToken);
+    const { schedule } = await Doctor.findById(req.doctor);
     for (var i = 0; i < schedule.length; i++) {
       if (schedule[i].date > new Date()) {
         const appointmentDate = schedule[i].date.toDateString();
@@ -114,7 +116,6 @@ module.exports.getUpcomingAppointments = async (req, res) => {
           }
         }
         upcomingAppointments.push({
-          id: schedule[i]._id,
           date: appointmentDate,
           from: schedule[i].from,
           to: schedule[i].to,
@@ -138,35 +139,39 @@ module.exports.getPatientHistory = async (req, res) => {
     var patientHistory = [];
     const { name, oldAppointments } = await Patient.findById(patientId);
     for (var i = 0; i < oldAppointments.length; i++) {
-      const { report, prescription } = await Appointment.findById(oldAppointments[i]);
+      const { report, prescription } = await Appointment.findById(
+        oldAppointments[i]
+      );
       patientHistory.push({
         report: report,
-        prescription: prescription
+        prescription: prescription,
       });
     }
     res.status(200).send({ name: name, patientHistory: patientHistory });
   } catch (err) {
     res.status(400).send(err.message);
   }
-}
+};
 
-module.exports.addReportAndPrecription = async (req, res) => {
+module.exports.addReportAndPrescription = async (req, res) => {
   const { appointmentId, report, prescription } = req.body;
   try {
     await Appointment.findByIdAndUpdate(appointmentId, {
       report: report,
-      prescription: prescription
+      prescription: prescription,
     });
     res.status(200).send();
   } catch (err) {
     res.status(500).send(err.message);
   }
-}
+};
 
 module.exports.endAppointment = async (req, res) => {
   const { appointmentId, patientId } = req.body;
   try {
-    const { newAppointments, oldAppointments } = await Patient.findById(patientId);
+    const { newAppointments, oldAppointments } = await Patient.findById(
+      patientId
+    );
     const { schedule } = await Doctor.findById(req.doctor);
     newAppointments.splice(newAppointments.indexOf(appointmentId), 1);
     oldAppointments.push(appointmentId);
@@ -179,10 +184,14 @@ module.exports.endAppointment = async (req, res) => {
     }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
-      await Patient.findByIdAndUpdate(patientId, {
-        newAppointments: newAppointments,
-        oldAppointments: oldAppointments
-      }, { session });
+      await Patient.findByIdAndUpdate(
+        patientId,
+        {
+          newAppointments: newAppointments,
+          oldAppointments: oldAppointments,
+        },
+        { session }
+      );
 
       await Doctor.findByIdAndUpdate(
         req.doctor,
@@ -199,7 +208,7 @@ module.exports.endAppointment = async (req, res) => {
   } catch (err) {
     res.status(400).send(err.message);
   }
-}
+};
 
 module.exports.patientDidNotShow = async (req, res) => {
   const { patientId, appointmentId } = req.body;
@@ -215,10 +224,13 @@ module.exports.patientDidNotShow = async (req, res) => {
     }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
-
-      await Patient.updateOne(patient, {
-        unVisits: patient.unVisits + 1
-      }, { session });
+      await Patient.updateOne(
+        patient,
+        {
+          unVisits: patient.unVisits + 1,
+        },
+        { session }
+      );
 
       await Doctor.findByIdAndUpdate(
         req.doctor,
@@ -237,6 +249,4 @@ module.exports.patientDidNotShow = async (req, res) => {
   } catch (err) {
     res.status(400).send(err.message);
   }
-}
-
-
+};
