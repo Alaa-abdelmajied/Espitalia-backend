@@ -3,7 +3,7 @@ const { Doctor } = require("../models/Doctor");
 const Hospital = require("../models/Hospital");
 const Appointment = require("../models/Appointment");
 
-const jsonwebtoken = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
 
