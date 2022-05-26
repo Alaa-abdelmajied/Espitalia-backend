@@ -1,7 +1,7 @@
 const Joi = require("joi");
 const mongoose = require("mongoose");
 const { isEmail } = require("validator");
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 const jsonwebtoken = require("jsonwebtoken");
 
 //deh ma3mola embedded schema gwa doctor w gwaha hena feh el appointment list
@@ -94,6 +94,7 @@ const doctorSchema = new mongoose.Schema({
 //   const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
 //   return decodedToken;
 // };
+
 
 function validate(doctor) {
   const schema = {
