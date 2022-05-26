@@ -1,30 +1,35 @@
-const Hospital = require('../models/Hospital');
 const { Doctor, Schedule } = require('../models/Doctor');
 const BloodRequest = require('../models/BloodRequests');
-
 const Receptionist = require('../models/Receptionist');
 const Patient = require('../models/Patient');
-
-const { application } = require('express');
 const { array, date } = require('joi');
 const jwt = require('jsonwebtoken');
+const Hospital = require('../models/Hospital');
+const Appointment = require('../models/Appointment');
+const OfflinePatient = require('../models/OfflinePatient');
+const Notification = require('../models/Notifications');
 
+const ObjectId = require("mongodb").ObjectId;
+
+
+const conn = require("../db");
 
 module.exports.Login = async (req, res) => {
   const { email, password } = req.body;
   try {
     const receptionist = await Receptionist.findOne({ email });
     if (!receptionist) return res.status(400).send('bad request');
-
+    //FIXME: no checking the password
     const token = jwt.sign({ _id: receptionist._id }, 'PrivateKey');
-    res.send(token);
+    // res.send(token);
+    res.header('x-auth-token', token).send('Logged in');
   }
   catch (error) {
     res.status(400).send(error);
   }
 }
 
-module.exports.GenerateBloodRequest = async (req, res) => {
+module.exports.CreateBloodRequest = async (req, res) => {
   const { bloodType, hospitalID, receptionistID } = req.body;
   try {
     const request = await BloodRequest.create({
@@ -52,23 +57,262 @@ module.exports.DropBloodRequest = async (req, res) => {
   }
 }
 
-module.exports.EditReservation = async (req,res) => {
+// module.exports.EditReservation = async (req,res) => {
+
+// }
+
+module.exports.GetSpecializations = async (req, res) => {
+
+  //const { id } = req.body;
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id);
+    const hospitalID = await receptionist.hospitalID;
+    console.log("Hospital ID:" + hospitalID);
+    // to test ; specializations need to be added to some hospitals in database
+    const hospital = await Hospital.findOne({ _id: hospitalID });
+    // console.log(hospital.specialization);
+
+    res.send(hospital.specialization);
+  }
+  catch (err) {
+    res.status(400).send(err);
+  }
+
+}
+
+module.exports.getDoctorsWithSpecificSpecialization = async (req, res) => {
+  const specializationName = req.params.specName;
+  console.log('spec:', specializationName);
+  try {
+
+    const receptionist = await Receptionist.findById(req.receptionist._id);
+    const hospitalID = receptionist.hospitalID;
+    const hospital = await Hospital.findOne({ _id: hospitalID });
+    // console.log(hospital.specialization);
+
+    const doctor = await Doctor.find({
+      specialization: specializationName,
+      hospitalID: hospitalID
+    });
+
+    console.log(doctor);
+    res.send(doctor);
+  }
+  catch (err) {
+    res.status(400).send(err);
+  }
+}
+
+module.exports.getDoctor = async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id);
+    res.send(doctor);
+  }
+  catch (error) {
+    res.status(404).send('not found');
+  }
+}
+
+module.exports.book = async (req, res) => {
+  const { patientPhoneNumber, patientName, drId, date, from, to } = req.body;
+  //console.log(req.body);
+  const doctor = await Doctor.findById(drId);
+  const hospitalId = doctor.hospitalID;
+  const schedule = doctor.schedule;
+
+  let obj = doctor.schedule.find(
+    (o) =>
+      (o.to === to) &
+      (o.from === from) &
+      (Date.parse(o.date) === Date.parse(date))
+  );
+  //console.log(obj);
+  const indexOfScehdule = doctor.schedule.indexOf(obj);
+  const flowNumber = obj.AppointmentList.length + 1;
+  // console.log(flowNumber);
+  try {
+    const session = await conn.startSession();
+    await session.withTransaction(async () => {
+      const P_id = ObjectId();
+      const newPatient = await OfflinePatient.create(
+        [{
+          _id: P_id,
+          name: patientName,
+          phoneNumber: patientPhoneNumber
+        }], { session }
+      );
+      // console.log("success");
+      const appointment = await Appointment.create(
+        [
+          {
+            _id: ObjectId(),
+            patient: P_id,
+            doctor: drId,
+            date: obj.date,
+            from: from,
+            to: to,
+            flowNumber: flowNumber,
+            hospital: hospitalId,
+            reviewd: false,
+          }],
+
+        { session }
+      );
+      obj.AppointmentList.push(appointment[0]._id);
+      schedule[indexOfScehdule] = obj;
+
+      await Doctor.findByIdAndUpdate(
+        drId,
+        {
+          $set: {
+            schedule: schedule,
+          },
+        },
+        { session }
+      );
+
+    });
+    session.endSession();
+    res.status(200).send("Appointment successfully booked");
+
+  } catch (error) {
+    console.log("error");
+    res.status(400).send("Error booking appointment");
+  }
+}
+
+module.exports.getAppointmentsList = async (req, res) => {
+  const { doctorID, scheduleID } = req.params;
+  // console.log(req.params);
+  try {
+    const doctor = await Doctor.findById(doctorID);
+    // console.log(doctor.schedule);
+    const schedule = doctor.schedule.find((o) => (o._id == scheduleID));
+    const appointments = [];
+    var result = [];
+    for (var i = 0; i < schedule.AppointmentList.length; i++) {
+      const appointment = await Appointment.findById(schedule.AppointmentList[i]);
+      var patient = await Patient.findById(appointment.patient).select('name _id phoneNumber');
+      if (patient == null) {
+        patient = await OfflinePatient.findById(appointment.patient).select('name _id phoneNumber');
+      }
+      const tuple = {
+        _id: appointment._id,
+        name: patient.name,
+        phoneNumber: patient.phoneNumber,
+        flowNumber: appointment.flowNumber
+      };
+      result.push(tuple);
+    }
+    // console.log(result);
+    res.send(result);
+  }
+  catch (error) {
+    res.status(404).send('ERROR: not Found');
+  }
+}
+
+module.exports.cancelAppointment = async (req, res) => {
+  const { appointmentID } = req.body;
+  try {
+    const { patient, doctor } = await Appointment.findById(appointmentID);
+    const { schedule } = await Doctor.findById(doctor);
+    const session = await conn.startSession();
+    await session.withTransaction(async () => {
+      await Appointment.findByIdAndDelete(appointmentID, { session });
+      var patient_ = await OfflinePatient.findById(patient);
+      if (patient_ == null) {
+        await Patient.findByIdAndUpdate(
+          patient,
+          {
+            $pull: {
+              newAppointments: appointmentID,
+            },
+          },
+          { session }
+        );
+      }
+      for (var i = 0; i < schedule.length; i++) {
+        if (schedule[i].AppointmentList.includes(appointmentID)) {
+          var index = schedule[i].AppointmentList.indexOf(appointmentID);
+          schedule[i].AppointmentList.splice(index, 1);
+        }
+      }
+      await Doctor.findByIdAndUpdate(
+        doctor,
+        {
+          $set: {
+            schedule: schedule,
+          },
+        },
+        { session }
+      );
+    });
+    session.endSession();
+    res.status(200).send("Appointment cancelled successfully");
+  }
+  catch (error) {
+    res.status(400).send("Error cancelling appointment");
+  }
+}
+
+module.exports.GetReceptionistProfile = async (req, res) => {
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id);
+    res.send(receptionist);
+  }
+  catch (error) {
+    res.status(400).send("No receptionist found");
+  }
+}
+
+module.exports.createNotification = async (req, res) => {
+  const { title, body, userID } = req.body;
+  try {
+    const notification = await Notification.create({
+      title,
+      body,
+      userID
+    });
+    res.send(notification);
+    console.log(notification);
+
+  }
+  catch (err) {
+    res.status(400).send(err);
+  }
+}
 
 
+module.exports.GetNotifications = async (req, res) => {
+
+  try {
+    const notification = await Notification.find({ userID: req.receptionist._id });
+    console.log(notification);
+    res.send(notification);
+  }
+  catch (error) {
+    res.status(400).send("No notifications available");
+  }
+
+}
+
+module.exports.getMyData = async (req, res) => {
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id).select('-password');
+    res.send(receptionist);
+  }
+  catch (error) {
+    res.status(404).send('not found');
+  }
 }
 
 // module.exports.Logout = async (req, res) => {
 // }
 
 // module.exports.ConfirmAttendance = async (req,res) => {
-
 // }
-
-// module.exports.AddOfflineReservation = async (req,res) => {
-
-// }
-
 // module.exports.TrackFlow = async (req,res) =>{
-
 // }
+
 

@@ -81,19 +81,20 @@ const doctorSchema = new mongoose.Schema({
   },
 });
 
-doctorSchema.methods.generateAuthToken = function () {
-  /*
-    FIXME:
-        the private key should be an environment variable
-    */
-  const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
-  return token;
-};
+// doctorSchema.methods.generateAuthToken = function () {
+//   /*
+//     FIXME:
+//         the private key should be an environment variable
+//     */
+//   const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
+//   return token;
+// };
 
-doctorSchema.methods.decodeToken = function (token) {
-  const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
-  return decodedToken;
-};
+// doctorSchema.methods.decodeToken = function (token) {
+//   const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+//   return decodedToken;
+// };
+
 
 function validate(doctor) {
   const schema = {

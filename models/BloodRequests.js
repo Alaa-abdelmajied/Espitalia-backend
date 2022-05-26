@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const bloodRequestSchema = new mongoose.Schema(
     {
 
-        PatientID: {
-            type: mongoose.Types.ObjectId,
+        PatientIDs:{
+            type: [mongoose.Types.ObjectId],
         },
         hospitalID: {
             type: mongoose.Types.ObjectId,
