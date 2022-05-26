@@ -332,9 +332,9 @@ module.exports.patientSearchHospital = async (req, res) => {
   const search = req.params.search;
   const hospitals = await Hospital.find({
     name: { $regex: ".*" + search + ".*" },
-  }).select({name:1,address:1,_id:1});
+  }).select({ name: 1, address: 1, _id: 1 });
 
-  var hospitalResult=[];
+  var hospitalResult = [];
   for (var i = 0; i < hospitals.length; i++) {
     hospitalResult.push({
       hospitalID: hospitals[i]._id,
@@ -776,17 +776,11 @@ module.exports.getDoctorDetails = async (req, res) => {
       });
     }
     for (var i = 0; i < schedule.length; i++) {
-      const fullDate =
-        schedule[i].date.getDate() +
-        "-" +
-        (schedule[i].date.getMonth() + 1) +
-        "-" +
-        schedule[i].date.getFullYear();
       scheduleDetails.push({
         date: schedule[i].date,
         from: schedule[i].from,
         to: schedule[i].to,
-        displayDate: fullDate,
+        displayDate: schedule[i].date.toDateString(),
       });
     }
     res.status(200).send({ doctorData, reviewDetails, scheduleDetails });
@@ -890,7 +884,6 @@ module.exports.book = async (req, res) => {
 
 module.exports.cancelAppointment = async (req, res) => {
   const appointmentID = req.params.appointmentID;
-
   try {
     const { patient, doctor } = await Appointment.findById(appointmentID);
     const { schedule } = await Doctor.findById(doctor);
@@ -910,6 +903,20 @@ module.exports.cancelAppointment = async (req, res) => {
       for (var i = 0; i < schedule.length; i++) {
         if (schedule[i].AppointmentList.includes(appointmentID)) {
           var index = schedule[i].AppointmentList.indexOf(appointmentID);
+          for (var j = index + 1; j < schedule[i].AppointmentList.length; j++) {
+            const currentFlowNumber = await Appointment.findById(
+              schedule[i].AppointmentList[j]
+            ).select({ flowNumber: 1, _id: 0 });
+            await Appointment.findByIdAndUpdate(
+              schedule[i].AppointmentList[j],
+              {
+                $set: {
+                  flowNumber: currentFlowNumber.flowNumber - 1,
+                },
+              },
+              { session }
+            );
+          }
           schedule[i].AppointmentList.splice(index, 1);
         }
       }
