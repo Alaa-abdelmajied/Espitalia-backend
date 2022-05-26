@@ -2,7 +2,7 @@ const Patient = require("../models/Patient");
 const { Doctor } = require("../models/Doctor");
 const Hospital = require("../models/Hospital");
 const Appointment = require("../models/Appointment");
-
+const conn = require("../db");
 const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
@@ -50,12 +50,8 @@ module.exports.getDoctor = async (req, res) => {
   }
 };
 
-/*FIXME: way of returning data + only show shifts that has appointments*/
 module.exports.getCurrentDayAppointments = async (req, res) => {
   console.log(req.doctor);
-  // const token = req.header("x-auth-token");
-  // console.log(token);
-  // const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
   var currentDayAppointments = [];
   try {
     const { schedule } = await Doctor.findById(req.doctor);
@@ -172,6 +168,7 @@ module.exports.endAppointment = async (req, res) => {
     const { newAppointments, oldAppointments } = await Patient.findById(
       patientId
     );
+
     const { schedule } = await Doctor.findById(req.doctor);
     newAppointments.splice(newAppointments.indexOf(appointmentId), 1);
     oldAppointments.push(appointmentId);
@@ -187,12 +184,13 @@ module.exports.endAppointment = async (req, res) => {
       await Patient.findByIdAndUpdate(
         patientId,
         {
-          newAppointments: newAppointments,
-          oldAppointments: oldAppointments,
+          $set: {
+            newAppointments: newAppointments,
+            oldAppointments: oldAppointments,
+          },
         },
         { session }
       );
-
       await Doctor.findByIdAndUpdate(
         req.doctor,
         {
