@@ -55,7 +55,6 @@ const receptionistSchema = new mongoose.Schema({
 
 });
 
-const Receptionist = mongoose.model('receptionist', receptionistSchema);
 
 //test
 // async function createReceptionist() {
@@ -84,6 +83,7 @@ receptionistSchema.methods.generateAuthToken = function() {
 receptionistSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt();
     this.password = await bcrypt.hash(this.password, salt);
+    console.log(this.password);
     next();
 });
 
@@ -104,4 +104,5 @@ receptionistSchema.statics.receptionistLogin = async function (email, password) 
 
 }
 
+const Receptionist = mongoose.model('receptionist', receptionistSchema);
 module.exports = Receptionist;

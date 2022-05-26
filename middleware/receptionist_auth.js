@@ -5,8 +5,7 @@ module.exports = function validateToken(req, res, next) {
     if(!token) return res.status(401).send(`Access denied. no Token found`);
     try{
         const decoded = jsonwebtoken.verify(token, "PrivateKey");
-        req.hospital = decoded;
-        //console.log(req.hospital);
+        req.receptionist = decoded;
         next();
     }catch(error) {
         res.status(400).send(`Invalid token`);

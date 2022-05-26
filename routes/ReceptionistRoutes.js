@@ -1,14 +1,34 @@
 const { Router } = require("express");
+const auth = require('../middleware/receptionist_auth');
 
 const receptionistController = require("../controllers/receptionistController");
 
 const router = Router();
 
+//POST
 router.post("/login", receptionistController.Login);
+router.post("/CreateBloodRequest", receptionistController.CreateBloodRequest);
+//router.post("/EditReservation", receptionistController.EditReservation);
+router.post("/book", auth, receptionistController.book);
+router.post("/createNotification", receptionistController.createNotification);
 
+//GET
+router.get("/GetSpecializations", auth, receptionistController.GetSpecializations);
+router.get("/getDoctorsWithSpecificSpecialization/:specName", auth, receptionistController.getDoctorsWithSpecificSpecialization);
+router.get("/getDoctor/:id", auth, receptionistController.getDoctor);
+router.get("/GetReceptionistProfile", auth, receptionistController.GetReceptionistProfile);
+router.get("/getMyData", auth, receptionistController.getMyData);
+router.get("/getAppointmentsList/:doctorID/:scheduleID", auth, receptionistController.getAppointmentsList);
+
+router.get("/GetNotifications", auth, receptionistController.GetNotifications);
 //router.get("/ReviewReservation", receptionistController.ReviewReservation);
 //router.get("/CancelReservation", receptionistController.CancelReservation);
-router.post("/GenerateBloodRequest", receptionistController.GenerateBloodRequest);
+
+//DELETE
 router.delete("/DropBloodRequest", receptionistController.DropBloodRequest);
-router.post("/EditReservation", receptionistController.EditReservation);
+router.delete("/cancelAppointment", receptionistController.cancelAppointment);
+
+//PUT
+
+
 module.exports = router;
