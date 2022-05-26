@@ -81,25 +81,20 @@ const doctorSchema = new mongoose.Schema({
   },
 });
 
-doctorSchema.pre('save', async function (next) {
-  const salt = await bcrypt.genSalt();
-  this.password = await bcrypt.hash(this.password, salt);
-  console.log(this.password);
-  next();
-});
-doctorSchema.methods.generateAuthToken = function () {
-  /*
-    FIXME:
-        the private key should be an environment variable
-    */
-  const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
-  return token;
-};
+// doctorSchema.methods.generateAuthToken = function () {
+//   /*
+//     FIXME:
+//         the private key should be an environment variable
+//     */
+//   const token = jsonwebtoken.sign({ _id: this._id }, "PrivateKey");
+//   return token;
+// };
 
-doctorSchema.methods.decodeToken = function (token) {
-  const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
-  return decodedToken;
-};
+// doctorSchema.methods.decodeToken = function (token) {
+//   const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
+//   return decodedToken;
+// };
+
 
 function validate(doctor) {
   const schema = {
