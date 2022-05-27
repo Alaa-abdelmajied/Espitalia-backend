@@ -133,17 +133,20 @@ module.exports.getPatientHistory = async (req, res) => {
   const { patientId } = req.params;
   try {
     var patientHistory = [];
-    const { name, oldAppointments } = await Patient.findById(patientId);
+    const { oldAppointments } = await Patient.findById(patientId);
     for (var i = 0; i < oldAppointments.length; i++) {
-      const { report, prescription } = await Appointment.findById(
+      const { doctor, report, prescription } = await Appointment.findById(
         oldAppointments[i]
       );
+      const { name, specialization } = await Doctor.findById(doctor);
       patientHistory.push({
+        doctorName: name,
+        specialization: specialization,
         report: report,
         prescription: prescription,
       });
     }
-    res.status(200).send({ name: name, patientHistory: patientHistory });
+    res.status(200).send(patientHistory);
   } catch (err) {
     res.status(400).send(err.message);
   }
