@@ -665,8 +665,12 @@ module.exports.upcomingAppointments = async (req, res) => {
         from: from,
         to: to,
         resNum: flowNumber,
+        dateToSort: date
       });
     }
+    appointmentDetails.sort(function (a, b) {
+      return a.dateToSort - b.dateToSort
+    });
     res.status(200).send(appointmentDetails);
   } catch (err) {
     res.status(400).send(err.message);
