@@ -364,9 +364,8 @@ module.exports.getPatient = async (req, res) => {
   const token = req.params.token;
   try {
     const id = decodeToken(token);
-    const { name, phoneNumber, email, dateOfBirth } = await Patient.findById(
-      id
-    );
+    const { name, phoneNumber, email, dateOfBirth, gender } =
+      await Patient.findById(id);
     const birthdate =
       dateOfBirth.getDate() +
       "-" +
@@ -374,7 +373,7 @@ module.exports.getPatient = async (req, res) => {
       "-" +
       dateOfBirth.getFullYear();
     const age = calculateAge(dateOfBirth);
-    res.send({ name, phoneNumber, email, birthdate, age });
+    res.send({ name, phoneNumber, email, birthdate, age, gender });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -684,17 +683,19 @@ module.exports.editProfile = async (req, res) => {
   // takes id from the reqest body
   const {
     token,
-    name,
-    phoneNumber,
-    // , dateOfBirth
+    newName,
+    newPhoneNumber,
+    newDate,
     // , questions
   } = req.body;
   const patientId = decodeToken(token);
   const patient = await Patient.findByIdAndUpdate(patientId, {
-    name: name,
-    phoneNumber: phoneNumber,
-    // dateOfBirth: dateOfBirth,
-    // questions: questions,
+    $set: {
+      name: newName,
+      phoneNumber: newPhoneNumber,
+      dateOfBirth: newDate,
+      // questions: questions,
+    },
   });
   if (!patient) return res.status(404).send("Patient not found");
   res.send(await Patient.findById(patientId));
@@ -1009,7 +1010,7 @@ module.exports.getFlowOfEntrance = async (req, res) => {
 };
 
 //function to update db scheudles most probably it will be moved to dr controller
-//var intervalID = setInterval(myCallback, 5000);
+// var intervalID = setInterval(myCallback, 5000);
 async function myCallback() {
   const drs = await Doctor.find();
   for (dr of drs) {
