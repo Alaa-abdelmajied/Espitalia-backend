@@ -119,6 +119,29 @@ module.exports.GetSpecializations = async (req, res) => {
 
 }
 
+module.exports.searchSpecializations = async (req,res) => {
+  console.log
+  try{
+     const receptionist = await Receptionist.findById(req.receptionist._id);
+    const hospitalID = await receptionist.hospitalID;
+    const hospital = await Hospital.findOne({ _id: hospitalID });
+    let search = req.params.search;
+
+    // console.log(hospital.specialization);
+    let array =[];
+    search =  ".*" + search + ".*";
+    //console.log(search);
+    for(var i = 0 ; i < hospital.specialization.length ; i++){
+      if(hospital.specialization[i].toUpperCase().match(search.toUpperCase()))
+          array.push(hospital.specialization[i]);
+    }
+    console.log(array);
+    res.status(200).send(array);
+  }catch{
+    res.status(400).send(err);
+  }
+}
+
 module.exports.getDoctorsWithSpecificSpecialization = async (req, res) => {
   const specializationName = req.params.specName;
   console.log('spec:', specializationName);
