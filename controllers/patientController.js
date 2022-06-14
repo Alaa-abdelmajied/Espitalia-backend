@@ -277,10 +277,22 @@ module.exports.patientSearchDoctor = async (req, res) => {
   const doctors = await Doctor.find({
     isActive: true,
     name: { $regex: ".*" + search + ".*" },
-  });
+  }).select({ _id: 1, name: 1, specialization: 1, hospitalID: 1, rating: 1 });
+  var allDoctors = [];
+  for (var i = 0; i < doctors.length; i++) {
+    const { name, address } = await Hospital.findById(doctors[i].hospitalID);
+    allDoctors.push({
+      _id: doctors[i]._id,
+      name: doctors[i].name,
+      specialization: doctors[i].specialization,
+      doctorHospitalName: name,
+      doctorHospitalAddress: address,
+      rating: doctors[i].rating,
+    });
+  }
   if (doctors.length === 0)
     return res.status(404).send("No doctors with that name found");
-  res.send(doctors);
+  res.send(allDoctors);
 };
 
 //search be Specialization bas
@@ -360,6 +372,7 @@ function calculateAge(dateString) {
   return age;
 }
 
+/*TODO: change name to getPatientProfile*/
 module.exports.getPatient = async (req, res) => {
   const token = req.params.token;
   try {
@@ -373,7 +386,7 @@ module.exports.getPatient = async (req, res) => {
       "-" +
       dateOfBirth.getFullYear();
     const age = calculateAge(dateOfBirth);
-    res.send({ name, phoneNumber, email, birthdate, age, gender });
+    res.send({ name, phoneNumber, email, birthdate, age, gender, dateOfBirth });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -664,11 +677,11 @@ module.exports.upcomingAppointments = async (req, res) => {
         from: from,
         to: to,
         resNum: flowNumber,
-        dateToSort: date
+        dateToSort: date,
       });
     }
     appointmentDetails.sort(function (a, b) {
-      return a.dateToSort - b.dateToSort
+      return a.dateToSort - b.dateToSort;
     });
     res.status(200).send(appointmentDetails);
   } catch (err) {
@@ -794,6 +807,7 @@ module.exports.getDoctorDetails = async (req, res) => {
   }
 };
 
+/*TODO: change name bookAppointment*/
 module.exports.book = async (req, res) => {
   const { token, drId, date, from, to } = req.body;
   const doctor = await Doctor.findById(drId);
