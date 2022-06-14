@@ -21,7 +21,10 @@ const bloodRequestSchema = new mongoose.Schema(
             type: Date,
             default: Date.now
         },
-
+        isVisible: {
+            type: Boolean,
+            default: true
+        }
     }
 )
 

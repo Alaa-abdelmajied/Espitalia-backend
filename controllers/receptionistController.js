@@ -30,7 +30,10 @@ module.exports.Login = async (req, res) => {
 }
 
 module.exports.CreateBloodRequest = async (req, res) => {
-  const { bloodType, hospitalID, receptionistID } = req.body;
+  const { bloodType } = req.body;
+  const receptionistID = req.receptionist._id;
+  var hospitalID = await Receptionist.findById(receptionistID).select("hospitalID -_id");
+  hospitalID = hospitalID.hospitalID;
   try {
     const request = await BloodRequest.create({
       bloodType,
@@ -38,7 +41,7 @@ module.exports.CreateBloodRequest = async (req, res) => {
       receptionistID
     });
     res.send(request);
-    console.log(request);
+    // console.log(request);
   }
   catch (err) {
     res.status(400).send(err);
@@ -54,6 +57,42 @@ module.exports.DropBloodRequest = async (req, res) => {
   }
   catch (err) {
     res.status(400).send(err);
+  }
+}
+
+module.exports.finalizeBloodRequest = async (req, res) => {
+  const { id } = req.body;
+  try {
+    console.log(id);
+    const request = await BloodRequest.findByIdAndUpdate(id, {isVisible: false});
+    res.status(200).send("Finalized");
+  }
+  catch (err) {
+    res.status(400).send(err);
+  }
+}
+
+module.exports.getBloodRequests = async (req, res) => {
+  try{
+    var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
+    hospitalID = hospitalID.hospitalID;
+    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: true});
+    res.send(requests);
+  }
+  catch(err) {
+    res.status(400).send("error");
+  }
+}
+
+module.exports.getOldBloodRequests = async (req, res) => {
+  try{
+    var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
+    hospitalID = hospitalID.hospitalID;
+    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: false});
+    res.send(requests);
+  }
+  catch(err) {
+    res.status(400).send("error");
   }
 }
 
