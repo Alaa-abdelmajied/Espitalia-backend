@@ -165,6 +165,27 @@ module.exports.addReportAndPrescription = async (req, res) => {
   }
 };
 
+module.exports.patientEntered = async (req, res) => {
+  //make like in endAppointment
+  //62897921ee601cc1ab0723a1
+  const { scheduleId, drId } = req.body;
+  try {
+    const { schedule } = await Doctor.findOne(
+      { "_id": drId },
+      {
+        schedule: {
+          "$elemMatch": {
+            "_id": scheduleId
+          }
+        }
+      });
+    console.log(schedule[0]);
+    res.send(200);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+}
+
 module.exports.endAppointment = async (req, res) => {
   const { appointmentId, patientId } = req.body;
   try {
