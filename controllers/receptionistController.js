@@ -76,7 +76,7 @@ module.exports.getBloodRequests = async (req, res) => {
   try{
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: true});
+    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: true}).sort({date: -1});
     res.send(requests);
   }
   catch(err) {
@@ -88,7 +88,7 @@ module.exports.getOldBloodRequests = async (req, res) => {
   try{
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: false});
+    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: false}).sort({date: -1});
     res.send(requests);
   }
   catch(err) {
