@@ -12,6 +12,14 @@ const scheduleSchema = new mongoose.Schema({
   AppointmentList: {
     type: [mongoose.Types.ObjectId],
   },
+  flowNumber: {
+    type: Number,
+    default: 1
+  },
+  entered:{
+    type: Boolean,
+    default: false
+  }
 });
 
 const doctorSchema = new mongoose.Schema({
@@ -62,10 +70,10 @@ const doctorSchema = new mongoose.Schema({
     type: mongoose.Types.ObjectId,
     //required: true,
   },
-  currentFlowNumber: {
-    type: Number,
-    default: 0,
-  },
+  // currentFlowNumber: {
+  //   type: Number,
+  //   default: 0,
+  // },
   workingDays: {
     type: [
       {

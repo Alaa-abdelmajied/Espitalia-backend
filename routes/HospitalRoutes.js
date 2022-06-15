@@ -22,7 +22,7 @@ router.get('/searchDoctors/:search',auth,hospitalController.hospitalSearchDoctor
 
 router.get('/getReceptionist/:receptID', auth, hospitalController.getReceptionist);
 router.get('/viewReceptionists', auth, hospitalController.viewReceptionists);
-//router.get('/searchReceptionist/:search',auth,hospitalController.hospitalSearchReceptionist);
+router.get('/searchReceptionist/:search',auth,hospitalController.hospitalSearchReceptionist);
 
 
 //TODO: PUT request:
