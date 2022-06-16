@@ -25,6 +25,8 @@ router.get("/getOldBloodRequests", auth, receptionistController.getOldBloodReque
 router.get("/GetNotifications", auth, receptionistController.GetNotifications);
 //router.get("/ReviewReservation", receptionistController.ReviewReservation);
 //router.get("/CancelReservation", receptionistController.CancelReservation);
+router.get("/searchSpecializations/:search", auth, receptionistController.searchSpecializations);
+
 
 //DELETE
 router.delete("/cancelAppointment", receptionistController.cancelAppointment);

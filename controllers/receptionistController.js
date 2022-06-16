@@ -76,7 +76,7 @@ module.exports.getBloodRequests = async (req, res) => {
   try{
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: true});
+    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: true}).sort({date: -1});
     res.send(requests);
   }
   catch(err) {
@@ -88,7 +88,7 @@ module.exports.getOldBloodRequests = async (req, res) => {
   try{
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: false});
+    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: false}).sort({date: -1});
     res.send(requests);
   }
   catch(err) {
@@ -117,6 +117,29 @@ module.exports.GetSpecializations = async (req, res) => {
     res.status(400).send(err);
   }
 
+}
+
+module.exports.searchSpecializations = async (req,res) => {
+  console.log
+  try{
+     const receptionist = await Receptionist.findById(req.receptionist._id);
+    const hospitalID = await receptionist.hospitalID;
+    const hospital = await Hospital.findOne({ _id: hospitalID });
+    let search = req.params.search;
+
+    // console.log(hospital.specialization);
+    let array =[];
+    search =  ".*" + search + ".*";
+    //console.log(search);
+    for(var i = 0 ; i < hospital.specialization.length ; i++){
+      if(hospital.specialization[i].toUpperCase().match(search.toUpperCase()))
+          array.push(hospital.specialization[i]);
+    }
+    console.log(array);
+    res.status(200).send(array);
+  }catch{
+    res.status(400).send(err);
+  }
 }
 
 module.exports.getDoctorsWithSpecificSpecialization = async (req, res) => {
