@@ -17,12 +17,10 @@ const conn = require("../db");
 module.exports.Login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const receptionist = await Receptionist.findOne({ email });
+    const receptionist = await Receptionist.receptionistLogin( email,password );
     if (!receptionist) return res.status(400).send('bad request');
-    //FIXME: no checking the password
-    const token = jwt.sign({ _id: receptionist._id }, 'PrivateKey');
-    // res.send(token);
-    res.header('x-auth-token', token).send('Logged in');
+    const token = receptionist.generateAuthToken();
+    res.header('x-auth-token', token).send(receptionist);
   }
   catch (error) {
     res.status(400).send(error);
