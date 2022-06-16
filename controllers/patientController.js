@@ -22,9 +22,9 @@ const createToken = (id) => {
   return jwt.sign({ id }, process.env.Token_Secret);
 };
 
-const decodeToken = (token) => {
-  return jwt.verify(token, process.env.Token_Secret).id;
-};
+// const decodeToken = (token) => {
+//   return jwt.verify(token, process.env.Token_Secret).id;
+// };
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -114,11 +114,11 @@ module.exports.patientLogin = async (req, res) => {
 };
 
 module.exports.patientLogout = async (req, res) => {
-  const { token } = req.body;
+  // const { token } = req.body;
   try {
-    const patientId = decodeToken(token);
+    // const patientId = decodeToken(token);
     await Patient.updateOne(
-      { _id: patientId },
+      { _id: req.patient },
       {
         loggedIn: false,
       }
@@ -130,11 +130,11 @@ module.exports.patientLogout = async (req, res) => {
 };
 
 module.exports.verifyAccount = async (req, res) => {
-  const { otp, token, forgot } = req.body;
+  const { otp, forgot } = req.body;
   try {
-    const patientId = decodeToken(token);
+    // const patientId = decodeToken(token);
     const waitingVerfication = await WaitingVerfication.findOne({
-      patient: patientId,
+      patient: req.patient,
     });
     if (otp == waitingVerfication.otp) {
       if (!forgot) {
@@ -146,7 +146,7 @@ module.exports.verifyAccount = async (req, res) => {
           }
         );
       }
-      await WaitingVerfication.deleteOne({ patient: patientId });
+      await WaitingVerfication.deleteOne({ patient: req.patient });
       res.status(200).send("Verified");
     } else {
       res.status(400).send("Wrong Otp");
@@ -167,11 +167,11 @@ module.exports.verifyAccount = async (req, res) => {
 // }
 
 module.exports.patientChangePassword = async (req, res) => {
-  const { oldPassword, newPassword, token } = req.body;
+  const { oldPassword, newPassword } = req.body;
   try {
-    const patientId = decodeToken(token);
+    // const patientId = decodeToken(token);
     const result = await Patient.changePassword(
-      patientId,
+      req.patient,
       oldPassword,
       newPassword
     );
@@ -198,10 +198,10 @@ module.exports.patientForgotPassword = async (req, res) => {
 };
 
 module.exports.patientForgotPasswordChange = async (req, res) => {
-  const { newPassword, token } = req.body;
+  const { newPassword } = req.body;
   try {
-    const patientId = decodeToken(token);
-    const result = await Patient.forgotPassword(patientId, newPassword);
+    // const patientId = decodeToken(token);
+    const result = await Patient.forgotPassword(req.patient, newPassword);
     res.status(200).send(result);
   } catch (err) {
     res.status(400).send(err.message);
@@ -374,11 +374,11 @@ function calculateAge(dateString) {
 
 /*TODO: change name to getPatientProfile*/
 module.exports.getPatient = async (req, res) => {
-  const token = req.params.token;
+  // const token = req.params.token;
   try {
-    const id = decodeToken(token);
+    // const id = decodeToken(token);
     const { name, phoneNumber, email, dateOfBirth, gender } =
-      await Patient.findById(id);
+      await Patient.findById(req.patient);
     const birthdate =
       dateOfBirth.getDate() +
       "-" +
@@ -393,10 +393,10 @@ module.exports.getPatient = async (req, res) => {
 };
 
 module.exports.getNotification = async (req, res) => {
-  const token = req.params.token;
+  // const token = req.params.token;
   try {
-    const id = decodeToken(token);
-    const notification = await Notifications.find({ userID: id });
+    // const id = decodeToken(token);
+    const notification = await Notifications.find({ userID: req.patient });
     console.log(notification);
     res.send(notification);
   } catch (err) {
@@ -621,11 +621,11 @@ module.exports.selectReport = async (req, res) => {
 
 //Old Appointments
 module.exports.oldAppointments = async (req, res) => {
-  const token = req.params.token;
+  // const token = req.params.token;
   try {
-    const id = decodeToken(token);
+    // const id = decodeToken(token);
 
-    const { oldAppointments } = await Patient.findById(id);
+    const { oldAppointments } = await Patient.findById(req.patient);
     var appointmentDetails = [];
     for (var i = 0; i < oldAppointments.length; i++) {
       const { doctor, hospital, date } = await Appointment.findById(
@@ -651,12 +651,14 @@ module.exports.oldAppointments = async (req, res) => {
 
 //Upcoming appointments
 module.exports.upcomingAppointments = async (req, res) => {
-  const token = req.params.token;
+  // const token = req.params.token;
   try {
-    const id = decodeToken(token);
+    // const id = decodeToken(token);
 
-    const { newAppointments } = await Patient.findById(id);
+    const { newAppointments } = await Patient.findById(req.patient);
     var appointmentDetails = [];
+    var currentFlowNumber;
+    var entered;
 
     for (var i = 0; i < newAppointments.length; i++) {
       const { doctor, hospital, date, flowNumber, from, to } =
@@ -668,6 +670,14 @@ module.exports.upcomingAppointments = async (req, res) => {
       const hospitalData = await Hospital.findById(hospital);
       const doctorData = await Doctor.findById(doctor);
 
+      for (var j = 0; j < doctorData.schedule.length; j++) {
+        if (doctorData.schedule[j].AppointmentList.includes(newAppointments[i]._id)) {
+          currentFlowNumber = doctorData.schedule[j].flowNumber;
+          entered = doctorData.schedule[j].entered;
+          break;
+        }
+      }
+
       appointmentDetails.push({
         appointmentID: newAppointments[i]._id,
         hospitalName: hospitalData.name,
@@ -677,6 +687,8 @@ module.exports.upcomingAppointments = async (req, res) => {
         from: from,
         to: to,
         resNum: flowNumber,
+        currentFlowNumber: currentFlowNumber,
+        entered: entered,
         dateToSort: date,
       });
     }
@@ -699,14 +711,14 @@ module.exports.upcomingAppointments = async (req, res) => {
 module.exports.editProfile = async (req, res) => {
   // takes id from the reqest body
   const {
-    token,
+    // token,
     newName,
     newPhoneNumber,
     newDate,
     // , questions
   } = req.body;
-  const patientId = decodeToken(token);
-  const patient = await Patient.findByIdAndUpdate(patientId, {
+  // const patientId = decodeToken(token);
+  const patient = await Patient.findByIdAndUpdate(req.patient, {
     $set: {
       name: newName,
       phoneNumber: newPhoneNumber,
@@ -715,15 +727,15 @@ module.exports.editProfile = async (req, res) => {
     },
   });
   if (!patient) return res.status(404).send("Patient not found");
-  res.send(await Patient.findById(patientId));
+  res.send(await Patient.findById(req.patient));
 };
 
 module.exports.rateAndReview = async (req, res) => {
-  const { rate, review, doctorId, token, appointmentID } = req.body;
+  const { rate, review, doctorId, appointmentID } = req.body;
   try {
-    const patientId = decodeToken(token);
+    // const patientId = decodeToken(token);
 
-    const { name } = await Patient.findById(patientId);
+    const { name } = await Patient.findById(req.patient);
     const { rating, reviews } = await Doctor.findById(doctorId);
 
     const numberOfReviews = reviews.length;
@@ -809,7 +821,7 @@ module.exports.getDoctorDetails = async (req, res) => {
 
 /*TODO: change name bookAppointment*/
 module.exports.book = async (req, res) => {
-  const { token, drId, date, from, to } = req.body;
+  const { drId, date, from, to } = req.body;
   const doctor = await Doctor.findById(drId);
   const hospitalId = doctor.hospitalID;
   const schedule = doctor.schedule;
@@ -828,7 +840,7 @@ module.exports.book = async (req, res) => {
   const flowNumber = obj.AppointmentList.length + 1;
 
   try {
-    const userId = decodeToken(token);
+    // const userId = decodeToken(token);
     const session = await conn.startSession();
     await session.withTransaction(async () => {
       // const { newAppointments } = await Patient.findById(userId);
@@ -857,7 +869,7 @@ module.exports.book = async (req, res) => {
         [
           {
             _id: ObjectId(),
-            patient: userId,
+            patient: req.patient,
             doctor: drId,
             date: obj.date,
             from: from,
@@ -869,7 +881,7 @@ module.exports.book = async (req, res) => {
         { session }
       );
       await Patient.findByIdAndUpdate(
-        userId,
+        req.patient,
         {
           $push: {
             newAppointments: appointment[0].id,
