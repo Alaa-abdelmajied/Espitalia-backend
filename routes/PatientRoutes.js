@@ -18,7 +18,7 @@ router.post(
   patientController.patientForgotPasswordChange
 );
 router.post("/rateAndReview", auth, patientController.rateAndReview);
-router.post("/book", auth, patientController.book);
+router.post("/book", auth, patientController.bookAppointment);
 
 //GET Routes
 router.get("/searchDoctors/:search", patientController.patientSearchDoctor);

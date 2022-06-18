@@ -276,7 +276,7 @@ module.exports.patientSearchDoctor = async (req, res) => {
   const search = req.params.search;
   const doctors = await Doctor.find({
     isActive: true,
-    name: { $regex: ".*" + search + ".*" },
+    name: { $regex: ".*" + search + ".*" ,$options: "i"},
   }).select({ _id: 1, name: 1, specialization: 1, hospitalID: 1, rating: 1 });
   var allDoctors = [];
   for (var i = 0; i < doctors.length; i++) {
@@ -343,7 +343,7 @@ module.exports.patientSearchSpecialization = async (req, res) => {
 module.exports.patientSearchHospital = async (req, res) => {
   const search = req.params.search;
   const hospitals = await Hospital.find({
-    name: { $regex: ".*" + search + ".*" },
+    name: { $regex: ".*" + search + ".*" ,$options: "i"},
   }).select({ name: 1, address: 1, _id: 1 });
 
   var hospitalResult = [];
@@ -671,7 +671,11 @@ module.exports.upcomingAppointments = async (req, res) => {
       const doctorData = await Doctor.findById(doctor);
 
       for (var j = 0; j < doctorData.schedule.length; j++) {
-        if (doctorData.schedule[j].AppointmentList.includes(newAppointments[i]._id)) {
+        if (
+          doctorData.schedule[j].AppointmentList.includes(
+            newAppointments[i]._id
+          )
+        ) {
           currentFlowNumber = doctorData.schedule[j].flowNumber;
           entered = doctorData.schedule[j].entered;
           break;
@@ -820,7 +824,7 @@ module.exports.getDoctorDetails = async (req, res) => {
 };
 
 /*TODO: change name bookAppointment*/
-module.exports.book = async (req, res) => {
+module.exports.bookAppointment = async (req, res) => {
   const { drId, date, from, to } = req.body;
   const doctor = await Doctor.findById(drId);
   const hospitalId = doctor.hospitalID;
@@ -843,7 +847,7 @@ module.exports.book = async (req, res) => {
     // const userId = decodeToken(token);
     const session = await conn.startSession();
     await session.withTransaction(async () => {
-      // const { newAppointments } = await Patient.findById(userId);
+      // const { newAppointments } = await Patient.findById(req.patient);
 
       // for (var i = 0; i < newAppointments.length; i++) {
       //   console.log("im here");
