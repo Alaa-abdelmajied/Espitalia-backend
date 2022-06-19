@@ -1,5 +1,5 @@
 const Patient = require("../models/Patient");
-const { Doctor } = require("../models/Doctor");
+const { Doctor, Schedule } = require("../models/Doctor");
 const Hospital = require("../models/Hospital");
 const Appointment = require("../models/Appointment");
 const conn = require("../db");
@@ -71,6 +71,7 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
               patientID: patient,
               appointmentID: schedule[i].AppointmentList[j],
               patientName: name,
+              scheduleID: schedule[i]._id
             });
           }
         }
@@ -166,28 +167,36 @@ module.exports.addReportAndPrescription = async (req, res) => {
 };
 
 module.exports.patientEntered = async (req, res) => {
-  //make like in endAppointment
-  //62897921ee601cc1ab0723a1
-  const { scheduleId, drId } = req.body;
+  const { scheduleId } = req.body;
   try {
-    const { schedule } = await Doctor.findOne(
-      { "_id": drId },
-      {
-        schedule: {
-          "$elemMatch": {
-            "_id": scheduleId
-          }
+    const { schedule } = await Doctor.findById(req.doctor);
+    for (var i = 0; i < schedule.length; i++) {
+      if (schedule[i]._id == scheduleId) {
+        if (schedule[i].entered) {
+          throw new Error('still ongoing')
+        } else {
+          schedule[i].entered = true;
         }
-      });
-    console.log(schedule[0]);
-    res.send(200);
+        break;
+      }
+    }
+    console.log(schedule);
+    await Doctor.findByIdAndUpdate(
+      req.doctor,
+      {
+        $set: {
+          schedule: schedule,
+        },
+      }
+    );
+    res.status(200).send();
   } catch (err) {
     res.status(400).send(err.message);
   }
 }
 
 module.exports.endAppointment = async (req, res) => {
-  const { appointmentId, patientId } = req.body;
+  const { appointmentId, patientId, scheduleId } = req.body;
   try {
     const { newAppointments, oldAppointments } = await Patient.findById(
       patientId
@@ -197,12 +206,27 @@ module.exports.endAppointment = async (req, res) => {
     newAppointments.splice(newAppointments.indexOf(appointmentId), 1);
     oldAppointments.push(appointmentId);
     for (var i = 0; i < schedule.length; i++) {
-      if (schedule[i].AppointmentList.includes(appointmentId)) {
-        var index = schedule[i].AppointmentList.indexOf(appointmentId);
-        schedule[i].AppointmentList.splice(index, 1);
+      if (schedule[i]._id == scheduleId) {
+        if (schedule[i].AppointmentList.includes(appointmentId)) {
+          if (schedule[i].entered) {
+            schedule[i].entered = false;
+          } else {
+            throw new Error('no ongoing');
+          }
+          var index = schedule[i].AppointmentList.indexOf(appointmentId);
+          schedule[i].AppointmentList.splice(index, 1);
+          schedule[i].flowNumber += 1;
+        }
         break;
       }
     }
+    // for (var i = 0; i < schedule.length; i++) {
+    //   if (schedule[i].AppointmentList.includes(appointmentId)) {
+    //     var index = schedule[i].AppointmentList.indexOf(appointmentId);
+    //     schedule[i].AppointmentList.splice(index, 1);
+    //     break;
+    //   }
+    // }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
       await Patient.findByIdAndUpdate(

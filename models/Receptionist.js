@@ -90,18 +90,15 @@ receptionistSchema.pre('save', async function (next) {
 receptionistSchema.statics.receptionistLogin = async function (email, password) {
     const receptionist = await this.findOne({ email });
     if (receptionist) {
-        //const valid = await bcrypt.compare(password, this.password);
-        console.log(password, this.password);
-        if (password == this.password)
+        const validPassword = await bcrypt.compare(password, receptionist.password);
+        //console.log(password, this.password);
+        if (validPassword) {
             return receptionist;
-        else {
-            throw Error('Incorrect email or password');
         }
-    }
-    else {
         throw Error('Incorrect email or password');
-    }
 
+    }
+    throw Error('Incorrect email or password');
 }
 
 const Receptionist = mongoose.model('receptionist', receptionistSchema);

@@ -11,7 +11,7 @@ router.post(
 );
 router.post("/endAppointments", auth, doctorController.endAppointment);
 router.post("/didNotShow", auth, doctorController.patientDidNotShow);
-router.post("/patientEntered", doctorController.patientEntered);
+router.post("/patientEntered", auth, doctorController.patientEntered);
 
 
 //GET Routes
