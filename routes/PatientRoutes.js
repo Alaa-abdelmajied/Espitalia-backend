@@ -23,8 +23,12 @@ router.post("/book", auth, patientController.bookAppointment);
 //GET Routes
 router.get("/searchDoctors/:search", patientController.patientSearchDoctor);
 router.get(
-  "/searchSpecialization/:search",
-  patientController.patientSearchSpecialization
+  "/doctorInSpecialization/:search",
+  patientController.doctorInSpecialization
+);
+router.get(
+  "/searchDoctorInSpecialization/:specialization/:search",
+  patientController.searchDoctorInSpecialization
 );
 router.get("/searchHospitals/:search", patientController.patientSearchHospital);
 router.get("/search/:search", patientController.patientGeneralSerach);
@@ -37,6 +41,12 @@ router.get(
   "/pressOnHospitalThenSpecialization/:id/:search",
   patientController.pressOnHospitalThenSpecialization
 );
+router.get(
+  "/searchDoctorInSpecInHosp/:id/:specialization/:search",
+  patientController.searchDoctorInSpecInHosp
+);
+router.get("/searchSpecializationInHospital/:id/:search", patientController.searchSpecializationInHospital);
+
 router.get("/report/:id", patientController.selectReport);
 router.get("/homepage", patientController.displayHomepage);
 router.get("/doctor/:id", patientController.getDoctorDetails);
