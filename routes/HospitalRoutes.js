@@ -23,7 +23,7 @@ router.get('/searchDoctors/:search',auth,hospitalController.hospitalSearchDoctor
 router.get('/getReceptionist/:receptID', auth, hospitalController.getReceptionist);
 router.get('/viewReceptionists', auth, hospitalController.viewReceptionists);
 router.get('/searchReceptionist/:search',auth,hospitalController.hospitalSearchReceptionist);
-
+router.get('/getProfile',auth,hospitalController.getProfile);
 
 //TODO: PUT request:
 router.put('/deactivateDoctor', auth, hospitalController.deactivateDoctor);

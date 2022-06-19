@@ -21,7 +21,6 @@ router.get("/getMyData", auth, receptionistController.getMyData);
 router.get("/getAppointmentsList/:doctorID/:scheduleID", auth, receptionistController.getAppointmentsList);
 router.get("/getBloodRequests", auth, receptionistController.getBloodRequests);
 router.get("/getOldBloodRequests", auth, receptionistController.getOldBloodRequests);
-
 router.get("/GetNotifications", auth, receptionistController.GetNotifications);
 //router.get("/ReviewReservation", receptionistController.ReviewReservation);
 //router.get("/CancelReservation", receptionistController.CancelReservation);

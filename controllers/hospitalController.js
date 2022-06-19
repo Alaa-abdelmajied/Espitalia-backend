@@ -513,3 +513,14 @@ module.exports.hospitalSearchReceptionist = async(req,res)=>{
     }
 
 }
+
+module.exports.getProfile = async (req,res)=>{
+    try{
+        const hospitalData= await Hospital.findById(req.hospital._id);
+        res.status(200).send(hospitalData);
+  
+    }
+    catch(error){
+        res.status(404).send('data not found');
+    }
+  }

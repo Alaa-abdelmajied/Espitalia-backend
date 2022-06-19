@@ -101,16 +101,11 @@ module.exports.getOldBloodRequests = async (req, res) => {
 // }
 
 module.exports.GetSpecializations = async (req, res) => {
-
-  //const { id } = req.body;
   try {
     const receptionist = await Receptionist.findById(req.receptionist._id);
     const hospitalID = await receptionist.hospitalID;
     console.log("Hospital ID:" + hospitalID);
-    // to test ; specializations need to be added to some hospitals in database
     const hospital = await Hospital.findOne({ _id: hospitalID });
-    // console.log(hospital.specialization);
-
     res.send(hospital.specialization);
   }
   catch (err) {
@@ -150,8 +145,6 @@ module.exports.getDoctorsWithSpecificSpecialization = async (req, res) => {
     const receptionist = await Receptionist.findById(req.receptionist._id);
     const hospitalID = receptionist.hospitalID;
     const hospital = await Hospital.findOne({ _id: hospitalID });
-    // console.log(hospital.specialization);
-
     const doctor = await Doctor.find({
       specialization: specializationName,
       hospitalID: hospitalID
@@ -245,10 +238,8 @@ module.exports.book = async (req, res) => {
 
 module.exports.getAppointmentsList = async (req, res) => {
   const { doctorID, scheduleID } = req.params;
-  // console.log(req.params);
   try {
     const doctor = await Doctor.findById(doctorID);
-    // console.log(doctor.schedule);
     const schedule = doctor.schedule.find((o) => (o._id == scheduleID));
     const appointments = [];
     var result = [];
@@ -266,7 +257,6 @@ module.exports.getAppointmentsList = async (req, res) => {
       };
       result.push(tuple);
     }
-    // console.log(result);
     res.send(result);
   }
   catch (error) {
