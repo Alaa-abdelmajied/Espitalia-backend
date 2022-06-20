@@ -50,12 +50,16 @@ const patientSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    loggedIn: {
-        type: Boolean,
-        default: false
+    // loggedIn: {
+    //     type: Boolean,
+    //     default: false
+    // },
+    unbanIn: {
+        type: Date,
+        default: new Date('1970-01-01T00:00:00.000')
     },
-    notifications:{
-        type:[mongoose.Types.ObjectId]
+    notifications: {
+        type: [mongoose.Types.ObjectId]
     }
 });
 

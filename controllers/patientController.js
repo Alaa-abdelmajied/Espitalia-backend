@@ -98,16 +98,23 @@ module.exports.patientLogin = async (req, res) => {
   const { email, password } = req.body;
   try {
     const patient = await Patient.patientLogin(email, password);
+    if (patient.unbanIn > Date.now()) {
+      throw new Error('Your account "' + email + '" is banned as you did not show up at your' +
+        ' reservation time for five times. This ban ends at ' + patient.unbanIn.toLocaleString())
+    }
     const token = createToken(patient.id);
     if (!patient.verified) {
       sendOtp(patient.id, patient.name, patient.email);
       res.status(200).send({ verified: patient.verified, token });
     } else {
-      await Patient.updateOne(patient, {
-        loggedIn: true,
-      });
       res.status(200).send({ verified: patient.verified, token });
     }
+    // else {
+    //   await Patient.updateOne(patient, {
+    //     loggedIn: true,
+    //   });
+    //   res.status(200).send({ verified: patient.verified, token });
+    // }
   } catch (err) {
     res.status(404).send(err.message);
   }
@@ -117,12 +124,12 @@ module.exports.patientLogout = async (req, res) => {
   // const { token } = req.body;
   try {
     // const patientId = decodeToken(token);
-    await Patient.updateOne(
-      { _id: req.patient },
-      {
-        loggedIn: false,
-      }
-    );
+    // await Patient.updateOne(
+    //   { _id: req.patient },
+    //   {
+    //     loggedIn: false,
+    //   }
+    // );
     res.status(200).send("Logged Out");
   } catch (err) {
     res.status(400).send(err.message);
@@ -142,7 +149,7 @@ module.exports.verifyAccount = async (req, res) => {
           { _id: waitingVerfication.patient },
           {
             verified: true,
-            loggedIn: true,
+            // loggedIn: true,
           }
         );
       }
