@@ -200,352 +200,8 @@ module.exports.patientForgotPassword = async (req, res) => {
 module.exports.patientForgotPasswordChange = async (req, res) => {
   const { newPassword } = req.body;
   try {
-    // const patientId = decodeToken(token);
     const result = await Patient.forgotPassword(req.patient, newPassword);
     res.status(200).send(result);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
-
-//search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
-module.exports.patientGeneralSerach = async (req, res) => {
-  const search = req.params.search;
-  const limitSize = 4;
-  // var result = new Array();
-  var doctorSeeMore = false;
-  var hospitalSeeMore = false;
-  var specializationsSeeMore = false;
-  var doctors = await Doctor.find({
-    isActive: true,
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-  })
-    .limit(limitSize)
-    .select({ name: 1 });
-
-  var hospitals = await Hospital.find({
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-  })
-    .limit(limitSize)
-    .select({ name: 1, address: 1 });
-
-  var specializations = await Specialization.find({
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-    "doctorIds.0": { $exists: true },
-  })
-    .limit(limitSize)
-    .select({ name: 1 });
-  if (doctors.length == limitSize) {
-    doctors.pop();
-    doctorSeeMore = true;
-  }
-
-  if (hospitals.length == limitSize) {
-    hospitals.pop();
-    hospitalSeeMore = true;
-  }
-
-  if (specializations.length == limitSize) {
-    specializations.pop();
-    specializationsSeeMore = true;
-  }
-
-  // result.push({ doctors: doctors });
-  // result.push({ hospitals: hospitals });
-  // result.push({ specializations: specializations });
-
-  if (
-    (doctors.length === 0) &
-    (hospitals.length === 0) &
-    (specializations.length === 0)
-  )
-    return res
-      .status(404)
-      .send("No hospitals or doctors or specializations found");
-  res.status(200).send({
-    doctors: doctors,
-    doctorSeeMore: doctorSeeMore,
-    hospitals: hospitals,
-    hospitalSeeMore: hospitalSeeMore,
-    specializations: specializations,
-    specializationsSeeMore: specializationsSeeMore,
-  });
-};
-//search be asma2 el drs bas
-module.exports.patientSearchDoctor = async (req, res) => {
-  const search = req.params.search;
-  const doctors = await Doctor.find({
-    isActive: true,
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-  }).select({ _id: 1, name: 1, specialization: 1, hospitalID: 1, rating: 1 });
-  var allDoctors = [];
-  for (var i = 0; i < doctors.length; i++) {
-    const { name, address } = await Hospital.findById(doctors[i].hospitalID);
-    allDoctors.push({
-      _id: doctors[i]._id,
-      name: doctors[i].name,
-      specialization: doctors[i].specialization,
-      doctorHospitalName: name,
-      doctorHospitalAddress: address,
-      rating: doctors[i].rating,
-    });
-  }
-  if (doctors.length === 0)
-    return res.status(404).send("No doctors with that name found");
-  res.send(allDoctors);
-};
-
-//search be Specialization bas
-module.exports.searchSpecialization = async (req, res) => {
-  const search = req.params.search;
-  var specializations = await Specialization.find({
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-    "doctorIds.0": { $exists: true },
-  }).select({ _id: 0, name: 1 });
-  if (specializations.length === 0)
-    return res.status(404).send("No specializations with that name found");
-  res.send(specializations);
-};
-
-//search be specialization table
-module.exports.doctorInSpecialization = async (req, res) => {
-  const search = req.params.search;
-  var doctorDetails = [];
-
-  try {
-    const specializations = await Specialization.findOne({ name: search });
-    console.log(specializations.doctorIds);
-    for (var i = 0; i < specializations.doctorIds.length; i++) {
-      const { _id, name, specialization, hospitalID, rating, isActive } =
-        await Doctor.findById(specializations.doctorIds[i]);
-      if (isActive) {
-        const hospitalInfo = await Hospital.findById(hospitalID).select({
-          name: 1,
-          address: 1,
-          _id: 0,
-        });
-        doctorDetails.push({
-          _id: _id,
-          name: name,
-          specialization: specialization,
-          rating: rating,
-          doctorHospitalName: hospitalInfo.name,
-          doctorHospitalAddress: hospitalInfo.address,
-        });
-      }
-    }
-    res.send(doctorDetails);
-  } catch (error) {
-    res.status(404).send(error.message);
-  }
-};
-
-module.exports.searchDoctorInSpecialization = async (req, res) => {
-  const specialization = req.params.specialization;
-  const search = req.params.search;
-  var doctorDetails = [];
-  try {
-    const doctors = await Doctor.find({
-      name: { $regex: ".*" + search + ".*", $options: "i" },
-      specialization: specialization,
-      isActive: true,
-    }).select({ name: 1, rating: 1, hospitalID: 1 });
-    for (var i = 0; i < doctors.length; i++) {
-      const hospitalInfo = await Hospital.findById(
-        doctors[i].hospitalID
-      ).select({
-        name: 1,
-        address: 1,
-        _id: 0,
-      });
-      doctorDetails.push({
-        _id: doctors[i]._id,
-        name: doctors[i].name,
-        specialization: specialization,
-        rating: doctors[i].rating,
-        doctorHospitalName: hospitalInfo.name,
-        doctorHospitalAddress: hospitalInfo.address,
-      });
-    }
-    console.log(doctorDetails);
-    res.status(200).send(doctorDetails);
-  } catch (err) {
-    res.status(404).send(err);
-  }
-};
-
-//search be hospital bas
-module.exports.patientSearchHospital = async (req, res) => {
-  const search = req.params.search;
-  const hospitals = await Hospital.find({
-    name: { $regex: ".*" + search + ".*", $options: "i" },
-  }).select({ name: 1, address: 1, _id: 1 });
-
-  var hospitalResult = [];
-  for (var i = 0; i < hospitals.length; i++) {
-    hospitalResult.push({
-      hospitalID: hospitals[i]._id,
-      hospitalName: hospitals[i].name,
-      address: hospitals[i].address,
-    });
-  }
-
-  if (hospitals.length === 0)
-    return res.status(404).send("No Hospitals with that name found");
-
-  res.send(hospitalResult);
-};
-
-module.exports.searchSpecializationInHospital = async (req, res) => {
-  const hospitalID = req.params.id;
-  const search = req.params.search;
-  console.log(hospitalID);
-  console.log(search);
-  try {
-    const { specialization } = await Hospital.findById(hospitalID);
-    console.log(specialization);
-    let array = [];
-    searchReg = ".*" + search + ".*";
-    console.log(searchReg);
-    for (var i = 0; i < specialization.length; i++) {
-      if (specialization[i].toUpperCase().match(searchReg.toUpperCase()))
-        array.push(specialization[i]);
-    }
-    console.log(array);
-    res.status(200).send(array);
-  } catch (err) {
-    if (array.length === 0) res.status(404).send("No specializations found");
-    else {
-      res.status(404).send(err);
-    }
-  }
-};
-
-//function when pressed on specefic hospital it will return its Specialization
-module.exports.pressOnHospital = async (req, res) => {
-  const id = req.params.id;
-  try {
-    const { specialization } = await Hospital.findById(id);
-    // const specialization = (await Hospital.find({ _id: id }))[0].specialization;
-    if (specialization.length === 0)
-      res.status(404).send("No specialzations found");
-    else res.status(200).send(specialization);
-  } catch (error) {
-    res.status(404).send("No hospitals found");
-  }
-};
-
-//return doctors in specefic hospital in specefic Specialization
-module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
-  const id = req.params.id;
-  const search = req.params.search;
-  const doctors = await Doctor.find({
-    hospitalID: id,
-    specialization: search,
-    isActive: true,
-  }).select({ _id: 1, name: 1, specialization: 1, rating: 1 });
-
-  if (doctors.length === 0) res.status(404).send("No doctors here");
-  else res.status(200).send(doctors);
-};
-
-module.exports.searchDoctorInSpecInHosp = async (req, res) => {
-  const id = req.params.id;
-  const specialization = req.params.specialization;
-  const search = req.params.search;
-  try {
-    const doctors = await Doctor.find({
-      name: { $regex: ".*" + search + ".*", $options: "i" },
-      hospitalID: id,
-      specialization: specialization,
-      isActive: true,
-    }).select({ name: 1, rating: 1 });
-    console.log(doctors);
-    res.status(200).send(doctors);
-  } catch (err) {
-    res.status(404).send(err);
-  }
-};
-
-function calculateAge(dateString) {
-  var today = new Date();
-  var birthDate = new Date(dateString);
-  var age = today.getFullYear() - birthDate.getFullYear();
-  var m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
-}
-
-/*TODO: change name to getPatientProfile*/
-module.exports.getPatient = async (req, res) => {
-  // const token = req.params.token;
-  try {
-    // const id = decodeToken(token);
-    const { name, phoneNumber, email, dateOfBirth, gender } =
-      await Patient.findById(req.patient);
-    const birthdate =
-      dateOfBirth.getDate() +
-      "-" +
-      (dateOfBirth.getMonth() + 1) +
-      "-" +
-      dateOfBirth.getFullYear();
-    const age = calculateAge(dateOfBirth);
-    res.send({ name, phoneNumber, email, birthdate, age, gender, dateOfBirth });
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
-
-module.exports.getNotification = async (req, res) => {
-  // const token = req.params.token;
-  try {
-    // const id = decodeToken(token);
-    const notification = await Notifications.find({ userID: req.patient });
-    console.log(notification);
-    res.send(notification);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
-
-module.exports.isBloodReqUpdated = async (req, res) => {
-  const { date } = req.params;
-  try {
-    const newEntries = await BloodRequests.count({
-      date: { $gt: new Date(date) },
-    });
-    res.status(200).send({ newEntries });
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-};
-
-module.exports.getBloodRequests = async (req, res) => {
-  const { skipNumber } = req.params;
-  const limitSize = 4;
-  try {
-    const bloodRequests = await BloodRequests.find()
-      .sort({ date: -1, _id: 1 })
-      .skip(skipNumber)
-      .limit(limitSize);
-    var requests = [];
-    for (var i = 0; i < bloodRequests.length; i++) {
-      var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
-      var date = new Date(bloodRequests[i].date);
-      // date.setHours(date.getHours() + 2);
-      var req = {
-        id: bloodRequests[i]._id,
-        hospital_Name: hospital.name,
-        bloodType: bloodRequests[i].bloodType,
-        quantity: bloodRequests[i].quantity,
-        date: date,
-      };
-      requests.push(req);
-      // console.log(req);
-    }
-    res.status(200).send(requests);
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -672,22 +328,368 @@ module.exports.seeAllSpecializations = async (req, res) => {
   }
 };
 
+const d = new Date();
+console.log(d, d.toLocaleString());
+
+//search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
+module.exports.patientGeneralSearch = async (req, res) => {
+  const search = req.params.search;
+  const limitSize = 4;
+
+  var doctorSeeMore = false;
+  var hospitalSeeMore = false;
+  var specializationsSeeMore = false;
+
+  var doctors = await Doctor.find({
+    isActive: true,
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1 });
+
+  var hospitals = await Hospital.find({
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  })
+    .limit(limitSize)
+    .select({ name: 1, address: 1 });
+
+  var specializations = await Specialization.find({
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+    "doctorIds.0": { $exists: true },
+  })
+    .limit(limitSize)
+    .select({ name: 1 });
+
+  if (doctors.length == limitSize) {
+    doctors.pop();
+    doctorSeeMore = true;
+  }
+
+  if (hospitals.length == limitSize) {
+    hospitals.pop();
+    hospitalSeeMore = true;
+  }
+
+  if (specializations.length == limitSize) {
+    specializations.pop();
+    specializationsSeeMore = true;
+  }
+
+  if (
+    (doctors.length === 0) &
+    (hospitals.length === 0) &
+    (specializations.length === 0)
+  )
+    return res
+      .status(404)
+      .send("No hospitals or doctors or specializations found");
+  res.status(200).send({
+    doctors: doctors,
+    doctorSeeMore: doctorSeeMore,
+    hospitals: hospitals,
+    hospitalSeeMore: hospitalSeeMore,
+    specializations: specializations,
+    specializationsSeeMore: specializationsSeeMore,
+  });
+};
+//search be asma2 el drs bas
+module.exports.patientSearchDoctor = async (req, res) => {
+  const search = req.params.search;
+  const doctors = await Doctor.find({
+    isActive: true,
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  }).select({ _id: 1, name: 1, specialization: 1, hospitalID: 1, rating: 1 });
+  var allDoctors = [];
+  for (var i = 0; i < doctors.length; i++) {
+    const { name, address } = await Hospital.findById(doctors[i].hospitalID);
+    allDoctors.push({
+      _id: doctors[i]._id,
+      name: doctors[i].name,
+      specialization: doctors[i].specialization,
+      doctorHospitalName: name,
+      doctorHospitalAddress: address,
+      rating: doctors[i].rating,
+    });
+  }
+  if (doctors.length === 0)
+    return res.status(404).send("No doctors with that name found");
+  res.status(200).send(allDoctors);
+};
+
+//search be hospital bas
+module.exports.patientSearchHospital = async (req, res) => {
+  const search = req.params.search;
+  const hospitals = await Hospital.find({
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+  }).select({ name: 1, address: 1, _id: 1 });
+
+  var hospitalResult = [];
+  for (var i = 0; i < hospitals.length; i++) {
+    hospitalResult.push({
+      hospitalID: hospitals[i]._id,
+      hospitalName: hospitals[i].name,
+      address: hospitals[i].address,
+    });
+  }
+
+  if (hospitals.length === 0)
+    return res.status(404).send("No Hospitals with that name found");
+
+  res.status(200).send(hospitalResult);
+};
+
+//search be Specialization bas
+module.exports.patientSearchSpecialization = async (req, res) => {
+  const search = req.params.search;
+  var specializations = await Specialization.find({
+    name: { $regex: ".*" + search + ".*", $options: "i" },
+    "doctorIds.0": { $exists: true },
+  }).select({ _id: 0, name: 1 });
+  if (specializations.length === 0)
+    return res.status(404).send("No specializations with that name found");
+  res.status(200).send(specializations);
+};
+
+//function when pressed on specefic hospital it will return its Specialization
+module.exports.pressOnHospital = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const { specialization } = await Hospital.findById(id);
+    // const specialization = (await Hospital.find({ _id: id }))[0].specialization;
+    if (specialization.length === 0)
+      res.status(404).send("No specialzations found");
+    else res.status(200).send(specialization);
+  } catch (error) {
+    res.status(404).send("No hospitals found");
+  }
+};
+
+module.exports.searchSpecializationInHospital = async (req, res) => {
+  const hospitalID = req.params.id;
+  const search = req.params.search;
+  console.log(hospitalID);
+  console.log(search);
+  try {
+    const { specialization } = await Hospital.findById(hospitalID);
+    console.log(specialization);
+    let array = [];
+    searchReg = ".*" + search + ".*";
+    console.log(searchReg);
+    for (var i = 0; i < specialization.length; i++) {
+      if (specialization[i].toUpperCase().match(searchReg.toUpperCase()))
+        array.push(specialization[i]);
+    }
+    console.log(array);
+    res.status(200).send(array);
+  } catch (err) {
+    if (array.length === 0) res.status(404).send("No specializations found");
+    else {
+      res.status(404).send(err);
+    }
+  }
+};
+
+//return doctors in specefic hospital in specific Specialization
+module.exports.pressOnHospitalThenSpecialization = async (req, res) => {
+  const id = req.params.id;
+  const search = req.params.search;
+  const doctors = await Doctor.find({
+    hospitalID: id,
+    specialization: search,
+    isActive: true,
+  }).select({ _id: 1, name: 1, specialization: 1, rating: 1 });
+
+  if (doctors.length === 0) res.status(404).send("No doctors here");
+  else res.status(200).send(doctors);
+};
+
+module.exports.searchDoctorInSpecInHosp = async (req, res) => {
+  const id = req.params.id;
+  const specialization = req.params.specialization;
+  const search = req.params.search;
+  try {
+    const doctors = await Doctor.find({
+      name: { $regex: ".*" + search + ".*", $options: "i" },
+      hospitalID: id,
+      specialization: specialization,
+      isActive: true,
+    }).select({ name: 1, rating: 1, specialization: 1 });
+    console.log(doctors);
+    res.status(200).send(doctors);
+  } catch (err) {
+    res.status(404).send(err);
+  }
+};
+
+//search be specialization table
+module.exports.pressOnSpecialization = async (req, res) => {
+  const search = req.params.search;
+  var doctorDetails = [];
+
+  try {
+    const specializations = await Specialization.findOne({ name: search });
+    console.log(specializations.doctorIds);
+    for (var i = 0; i < specializations.doctorIds.length; i++) {
+      const { _id, name, specialization, hospitalID, rating, isActive } =
+        await Doctor.findById(specializations.doctorIds[i]);
+      if (isActive) {
+        const hospitalInfo = await Hospital.findById(hospitalID).select({
+          name: 1,
+          address: 1,
+          _id: 0,
+        });
+        doctorDetails.push({
+          _id: _id,
+          name: name,
+          specialization: specialization,
+          rating: rating,
+          doctorHospitalName: hospitalInfo.name,
+          doctorHospitalAddress: hospitalInfo.address,
+        });
+      }
+    }
+    res.status(200).send(doctorDetails);
+  } catch (error) {
+    res.status(404).send(error.message);
+  }
+};
+
+module.exports.searchDoctorInSpecialization = async (req, res) => {
+  const specialization = req.params.specialization;
+  const search = req.params.search;
+  var doctorDetails = [];
+  try {
+    const doctors = await Doctor.find({
+      name: { $regex: ".*" + search + ".*", $options: "i" },
+      specialization: specialization,
+      isActive: true,
+    }).select({ name: 1, rating: 1, hospitalID: 1 });
+    for (var i = 0; i < doctors.length; i++) {
+      const hospitalInfo = await Hospital.findById(
+        doctors[i].hospitalID
+      ).select({
+        name: 1,
+        address: 1,
+        _id: 0,
+      });
+      doctorDetails.push({
+        _id: doctors[i]._id,
+        name: doctors[i].name,
+        specialization: specialization,
+        rating: doctors[i].rating,
+        doctorHospitalName: hospitalInfo.name,
+        doctorHospitalAddress: hospitalInfo.address,
+      });
+    }
+    console.log(doctorDetails);
+    res.status(200).send(doctorDetails);
+  } catch (err) {
+    res.status(404).send(err);
+  }
+};
+
+function calculateAge(dateString) {
+  var today = new Date();
+  var birthDate = new Date(dateString);
+  var age = today.getFullYear() - birthDate.getFullYear();
+  var m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+/*TODO: change name to getPatientProfile*/
+module.exports.getPatientProfile = async (req, res) => {
+  // const token = req.params.token;
+  try {
+    // const id = decodeToken(token);
+    const { name, phoneNumber, email, dateOfBirth, gender } =
+      await Patient.findById(req.patient);
+    const birthdate =
+      dateOfBirth.getDate() +
+      "-" +
+      (dateOfBirth.getMonth() + 1) +
+      "-" +
+      dateOfBirth.getFullYear();
+    const age = calculateAge(dateOfBirth);
+    res
+      .status(200)
+      .send({ name, phoneNumber, email, birthdate, age, gender, dateOfBirth });
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.getNotification = async (req, res) => {
+  // const token = req.params.token;
+  try {
+    // const id = decodeToken(token);
+    const notification = await Notifications.find({ userID: req.patient });
+    console.log(notification[0].date.toLocaleString());
+    res.send(notification);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.isBloodReqUpdated = async (req, res) => {
+  const { date } = req.params;
+  try {
+    const newEntries = await BloodRequests.count({
+      date: { $gt: new Date(date) },
+    });
+    res.status(200).send({ newEntries });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
+
+module.exports.getBloodRequests = async (req, res) => {
+  const { skipNumber } = req.params;
+  const limitSize = 4;
+  try {
+    const bloodRequests = await BloodRequests.find()
+      .sort({ date: -1, _id: 1 })
+      .skip(skipNumber)
+      .limit(limitSize);
+    var requests = [];
+    for (var i = 0; i < bloodRequests.length; i++) {
+      var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
+      var date = new Date(bloodRequests[i].date);
+      // date.setHours(date.getHours() + 2);
+      var req = {
+        id: bloodRequests[i]._id,
+        hospital_Name: hospital.name,
+        bloodType: bloodRequests[i].bloodType,
+        quantity: bloodRequests[i].quantity,
+        date: date,
+      };
+      requests.push(req);
+      // console.log(req);
+    }
+    res.status(200).send(requests);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
 //Get Report
-module.exports.selectReport = async (req, res) => {
+module.exports.getReport = async (req, res) => {
   const appointmentID = req.params.id;
   try {
     const { doctor, hospital, date, report, prescription, reviewd } =
       await Appointment.findById(appointmentID);
     const doctorData = await Doctor.findById(doctor);
     const hospitalData = await Hospital.findById(hospital);
-    const fullDate =
-      date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
+    // const fullDate =
+    //   date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
     const appointmentDetails = {
       drId: doctorData._id,
       hospitalName: hospitalData.name,
       drName: doctorData.name,
       specialization: doctorData.specialization,
-      date: fullDate,
+      date: date.toDateString(),
       diagnosis: report,
       prescription: prescription,
       reviewed: reviewd,
@@ -710,8 +712,8 @@ module.exports.oldAppointments = async (req, res) => {
       const { doctor, hospital, date } = await Appointment.findById(
         oldAppointments[i]._id
       );
-      const fullDate =
-        date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
+      // const fullDate =
+      //   date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear();
       const hospitalData = await Hospital.findById(hospital);
       const doctorData = await Doctor.findById(doctor);
       appointmentDetails.push({
@@ -719,7 +721,7 @@ module.exports.oldAppointments = async (req, res) => {
         hospitalName: hospitalData.name,
         drName: doctorData.name,
         specialization: doctorData.specialization,
-        date: fullDate,
+        date: date.toDateString(),
       });
     }
     res.status(200).send(appointmentDetails);
@@ -730,10 +732,7 @@ module.exports.oldAppointments = async (req, res) => {
 
 //Upcoming appointments
 module.exports.upcomingAppointments = async (req, res) => {
-  // const token = req.params.token;
   try {
-    // const id = decodeToken(token);
-
     const { newAppointments } = await Patient.findById(req.patient);
     var appointmentDetails = [];
     var currentFlowNumber;
@@ -792,15 +791,17 @@ module.exports.upcomingAppointments = async (req, res) => {
         if the patient is not found, the function return 404 error (not found error).
 */
 module.exports.editProfile = async (req, res) => {
-  // takes id from the reqest body
   const {
-    // token,
     newName,
     newPhoneNumber,
     newDate,
+    diabetic,
+    bloodType,
+    bloodPressure,
+    
     // , questions
   } = req.body;
-  // const patientId = decodeToken(token);
+
   const patient = await Patient.findByIdAndUpdate(req.patient, {
     $set: {
       name: newName,
@@ -810,7 +811,7 @@ module.exports.editProfile = async (req, res) => {
     },
   });
   if (!patient) return res.status(404).send("Patient not found");
-  res.send(await Patient.findById(req.patient));
+  res.status(200).send(await Patient.findById(req.patient));
 };
 
 module.exports.rateAndReview = async (req, res) => {
@@ -859,7 +860,8 @@ module.exports.getDoctorDetails = async (req, res) => {
   var doctorData = [];
   var reviewDetails = [];
   var scheduleDetails = [];
-
+  const currentTime = new Date().toLocaleTimeString("en-GB").substring(0, 5);
+  console.log("new date", "hours==>", currentTime);
   try {
     const { name, hospitalID, reviews, schedule, rating, specialization } =
       await Doctor.findById(doctorId);
@@ -888,6 +890,7 @@ module.exports.getDoctorDetails = async (req, res) => {
         date: fullDate,
       });
     }
+
     for (var i = 0; i < schedule.length; i++) {
       scheduleDetails.push({
         date: schedule[i].date,
@@ -895,6 +898,13 @@ module.exports.getDoctorDetails = async (req, res) => {
         to: schedule[i].to,
         displayDate: schedule[i].date.toDateString(),
       });
+      const x = "01:00";
+      console.log(x, currentTime);
+      if (x > currentTime) {
+        console.log("not yet");
+      } else {
+        console.log("passed");
+      }
     }
     res.status(200).send({ doctorData, reviewDetails, scheduleDetails });
   } catch (err) {
@@ -1051,66 +1061,6 @@ module.exports.cancelAppointment = async (req, res) => {
     res.status(400).send("Error cancelling appointment");
   }
 };
-
-// module.exports.cancelAppointment = async (req, res) => {
-//   const { appointmentID } = req.params.appointmentID;
-//   // const { from } = req.params.from;
-//   // const { to } = req.params.to;
-// console.log(appointmentID);
-//   try {
-//     const { patient, doctor, date, from, to } = await Appointment.findById(
-//       appointmentID
-//     );
-//     console.log(patient,doctor,date,from,to);
-//     const { schedule } = await Doctor.findById(doctor);
-//     // const schedule = dr.schedule;
-
-//     let obj = schedule.find(
-//       (o) =>
-//         (o.to === to) &
-//         (o.from === from) &
-//         (Date.parse(o.date) === Date.parse(date))
-//     );
-
-//     console.log(obj);
-//     const indexOfScehdule = schedule.indexOf(obj);
-//     console.log(indexOfScehdule);
-//     // const session = await conn.startSession();
-//     // await session.withTransaction(async () => {
-//     //   await Appointment.findByIdAndDelete(appointmentID, { session });
-//     //   await Patient.findByIdAndUpdate(
-//     //     patient,
-//     //     {
-//     //       $pull: {
-//     //         newAppointments: appointmentID,
-//     //       },
-//     //     },
-//     //     { session }
-//     //   );
-
-//     //   for (var i = 0; i < obj.AppointmentList.length; i++) {
-//     //     if (obj.AppointmentList[i] == appointmentID) {
-//     //       obj.AppointmentList.splice(i, 1);
-//     //     }
-//     //   }
-//     //   schedule[indexOfScehdule] = obj;
-//     //   await Doctor.findByIdAndUpdate(
-//     //     doctor,
-//     //     {
-//     //       $set: {
-//     //         schedule: schedule,
-//     //       },
-//     //     },
-//     //     { session }
-//     //   );
-//     // });
-//     // session.endSession();
-//     // res.status(200).send("Appointment cancelled successfully");
-//     console.log("success");
-//   } catch (err) {
-//     res.status(400).send("Error cancelling appointment");
-//   }
-// };
 
 module.exports.getFlowOfEntrance = async (req, res) => {
   const { doctorId } = req.body;
