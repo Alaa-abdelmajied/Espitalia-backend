@@ -25,7 +25,7 @@ router.get(
   auth,
   doctorController.getUpcomingAppointments
 );
-router.get("/doctorProfile", auth, doctorController.getDoctor);
+router.get("/doctorProfile", auth, doctorController.getDoctorProfile);
 router.get(
   "/upcomingAppointments",
   auth,

@@ -27,11 +27,7 @@ module.exports.Login = async (req, res) => {
   }
 };
 
-module.exports.getDoctor = async (req, res) => {
-  // const token = req.header("x-auth-token");
-  // console.log(req.doctor);
-  // const decodedToken = decodeToken(token);
-
+module.exports.getDoctorProfile = async (req, res) => {
   try {
     const { name, phoneNumber, email, hospitalID, workingDays, rating } =
       await Doctor.findById(req.doctor);
@@ -92,8 +88,6 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
 };
 
 module.exports.getUpcomingAppointments = async (req, res) => {
-  // const token = req.header("x-auth-token");
-  // const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
   var upcomingAppointments = [];
 
   try {
