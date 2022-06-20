@@ -24,17 +24,17 @@ router.post("/book", auth, patientController.bookAppointment);
 router.get("/searchDoctors/:search", patientController.patientSearchDoctor);
 router.get(
   "/doctorInSpecialization/:search",
-  patientController.doctorInSpecialization
+  patientController.pressOnSpecialization
 );
 router.get(
   "/searchDoctorInSpecialization/:specialization/:search",
   patientController.searchDoctorInSpecialization
 );
 router.get("/searchHospitals/:search", patientController.patientSearchHospital);
-router.get("/search/:search", patientController.patientGeneralSerach);
+router.get("/search/:search", patientController.patientGeneralSearch);
 router.get(
   "/searchAllSpecializations/:search",
-  patientController.searchSpecialization
+  patientController.patientSearchSpecialization
 );
 router.get("/pressOnHospital/:id", patientController.pressOnHospital);
 router.get(
@@ -47,7 +47,7 @@ router.get(
 );
 router.get("/searchSpecializationInHospital/:id/:search", patientController.searchSpecializationInHospital);
 
-router.get("/report/:id", patientController.selectReport);
+router.get("/report/:id", patientController.getReport);
 router.get("/homepage", patientController.displayHomepage);
 router.get("/doctor/:id", patientController.getDoctorDetails);
 router.get("/allDoctors", patientController.seeAllDoctors);
@@ -58,7 +58,7 @@ router.get(
   "/upcomingAppointment", auth,
   patientController.upcomingAppointments
 );
-router.get("/getPatient", auth, patientController.getPatient);
+router.get("/getPatient", auth, patientController.getPatientProfile);
 router.get("/getNotification", auth, patientController.getNotification);
 router.get("/getBloodRequests/:skipNumber", patientController.getBloodRequests);
 router.get("/isBloodReqUpdated/:date", patientController.isBloodReqUpdated);
