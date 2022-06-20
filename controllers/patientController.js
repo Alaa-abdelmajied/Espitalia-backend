@@ -22,15 +22,11 @@ const createToken = (id) => {
   return jwt.sign({ id }, process.env.Token_Secret);
 };
 
-// const decodeToken = (token) => {
-//   return jwt.verify(token, process.env.Token_Secret).id;
-// };
-
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "espitalia.app.gp",
-    pass: "Espitalia@app.com",
+    pass: "ovxfmxqneryirltk",
   },
 });
 
@@ -73,10 +69,30 @@ const sendOtp = async (patientId, patientName, email) => {
   });
 };
 
+module.exports.resendOtp = async (req, res) => {
+  try {
+    const { name, email } = await Patient.findById(req.patient);
+    sendOtp(req.patient, name, email);
+    res.status(200).send();
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
 module.exports.patientSignup = async (req, res) => {
-  const { email, password, name, phoneNumber, dateOfBirth, gender,
-    diabetic, bloodType, bloodPressure, allergic, allergies } =
-    req.body;
+  const {
+    email,
+    password,
+    name,
+    phoneNumber,
+    dateOfBirth,
+    gender,
+    diabetic,
+    bloodType,
+    bloodPressure,
+    allergic,
+    allergies,
+  } = req.body;
   try {
     const patient = await Patient.create({
       email,
@@ -85,11 +101,11 @@ module.exports.patientSignup = async (req, res) => {
       phoneNumber,
       dateOfBirth,
       gender,
-      diabetic, 
-      bloodType, 
-      bloodPressure, 
-      allergic, 
-      allergies
+      diabetic,
+      bloodType,
+      bloodPressure,
+      allergic,
+      allergies,
     });
     const token = createToken(patient.id);
     sendOtp(patient.id, patient.name, patient.email);
@@ -104,8 +120,13 @@ module.exports.patientLogin = async (req, res) => {
   try {
     const patient = await Patient.patientLogin(email, password);
     if (patient.unbanIn > Date.now()) {
-      throw new Error('Your account "' + email + '" is banned as you did not show up at your' +
-        ' reservation time for five times. This ban ends at ' + patient.unbanIn.toLocaleString())
+      throw new Error(
+        'Your account "' +
+          email +
+          '" is banned as you did not show up at your' +
+          " reservation time for five times. This ban ends at " +
+          patient.unbanIn.toLocaleString()
+      );
     }
     const token = createToken(patient.id);
     if (!patient.verified) {
@@ -114,27 +135,13 @@ module.exports.patientLogin = async (req, res) => {
     } else {
       res.status(200).send({ verified: patient.verified, token });
     }
-    // else {
-    //   await Patient.updateOne(patient, {
-    //     loggedIn: true,
-    //   });
-    //   res.status(200).send({ verified: patient.verified, token });
-    // }
   } catch (err) {
     res.status(404).send(err.message);
   }
 };
 
 module.exports.patientLogout = async (req, res) => {
-  // const { token } = req.body;
   try {
-    // const patientId = decodeToken(token);
-    // await Patient.updateOne(
-    //   { _id: req.patient },
-    //   {
-    //     loggedIn: false,
-    //   }
-    // );
     res.status(200).send("Logged Out");
   } catch (err) {
     res.status(400).send(err.message);
@@ -144,7 +151,6 @@ module.exports.patientLogout = async (req, res) => {
 module.exports.verifyAccount = async (req, res) => {
   const { otp, forgot } = req.body;
   try {
-    // const patientId = decodeToken(token);
     const waitingVerfication = await WaitingVerfication.findOne({
       patient: req.patient,
     });
@@ -154,7 +160,6 @@ module.exports.verifyAccount = async (req, res) => {
           { _id: waitingVerfication.patient },
           {
             verified: true,
-            // loggedIn: true,
           }
         );
       }
@@ -168,20 +173,9 @@ module.exports.verifyAccount = async (req, res) => {
   }
 };
 
-// module.exports.resendOtp = async (req, res) => {
-//     const { token } = req.body;
-//     try {
-//         const decodedToken = jwt.verify(token, 'Grad_Proj.Espitalia#SecRet.Application@30132825275');
-//         sendOtp(patient.id, patient.name, patient.email);
-//     } catch (err) {
-//         res.status(400).send(err.message);
-//     }
-// }
-
 module.exports.patientChangePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   try {
-    // const patientId = decodeToken(token);
     const result = await Patient.changePassword(
       req.patient,
       oldPassword,
@@ -254,7 +248,6 @@ module.exports.displayHomepage = async (req, res) => {
 
     for (var i = 0; i < dataSize; i++) {
       const { name, address } = await Hospital.findById(doctor[i].hospitalID);
-      // const { rating } = await Doctor.findById(doctor[i]._id);
       hospitals.push({
         _id: hospital[i]._id,
         name: hospital[i].name,
@@ -613,11 +606,19 @@ function calculateAge(dateString) {
 
 /*TODO: change name to getPatientProfile*/
 module.exports.getPatientProfile = async (req, res) => {
-  // const token = req.params.token;
   try {
-    // const id = decodeToken(token);
-    const { name, phoneNumber, email, dateOfBirth, gender } =
-      await Patient.findById(req.patient);
+    const {
+      name,
+      phoneNumber,
+      email,
+      dateOfBirth,
+      gender,
+      bloodType,
+      diabetic,
+      bloodPressure,
+      allergic,
+      allergies,
+    } = await Patient.findById(req.patient);
     const birthdate =
       dateOfBirth.getDate() +
       "-" +
@@ -625,18 +626,27 @@ module.exports.getPatientProfile = async (req, res) => {
       "-" +
       dateOfBirth.getFullYear();
     const age = calculateAge(dateOfBirth);
-    res
-      .status(200)
-      .send({ name, phoneNumber, email, birthdate, age, gender, dateOfBirth });
+    res.status(200).send({
+      name,
+      phoneNumber,
+      email,
+      birthdate,
+      age,
+      gender,
+      dateOfBirth,
+      bloodType,
+      diabetic,
+      bloodPressure,
+      allergic,
+      allergies,
+    });
   } catch (err) {
     res.status(400).send(err.message);
   }
 };
 
 module.exports.getNotification = async (req, res) => {
-  // const token = req.params.token;
   try {
-    // const id = decodeToken(token);
     const notification = await Notifications.find({ userID: req.patient });
     console.log(notification[0].date.toLocaleString());
     res.send(notification);
@@ -669,7 +679,6 @@ module.exports.getBloodRequests = async (req, res) => {
     for (var i = 0; i < bloodRequests.length; i++) {
       var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
       var date = new Date(bloodRequests[i].date);
-      // date.setHours(date.getHours() + 2);
       var req = {
         id: bloodRequests[i]._id,
         hospital_Name: hospital.name,
@@ -678,7 +687,6 @@ module.exports.getBloodRequests = async (req, res) => {
         date: date,
       };
       requests.push(req);
-      // console.log(req);
     }
     res.status(200).send(requests);
   } catch (err) {
@@ -714,10 +722,7 @@ module.exports.getReport = async (req, res) => {
 
 //Old Appointments
 module.exports.oldAppointments = async (req, res) => {
-  // const token = req.params.token;
   try {
-    // const id = decodeToken(token);
-
     const { oldAppointments } = await Patient.findById(req.patient);
     var appointmentDetails = [];
     for (var i = 0; i < oldAppointments.length; i++) {
@@ -807,11 +812,11 @@ module.exports.editProfile = async (req, res) => {
     newName,
     newPhoneNumber,
     newDate,
-    diabetic,
-    bloodType,
-    bloodPressure,
-    
-    // , questions
+    newDiabetic,
+    newBloodType,
+    newBloodPressure,
+    newAllergic,
+    newAllergies,
   } = req.body;
 
   const patient = await Patient.findByIdAndUpdate(req.patient, {
@@ -819,7 +824,11 @@ module.exports.editProfile = async (req, res) => {
       name: newName,
       phoneNumber: newPhoneNumber,
       dateOfBirth: newDate,
-      // questions: questions,
+      bloodType: newBloodType,
+      diabetic: newDiabetic,
+      bloodPressure: newBloodPressure,
+      allergic: newAllergic,
+      allergies: newAllergies,
     },
   });
   if (!patient) return res.status(404).send("Patient not found");
@@ -829,8 +838,6 @@ module.exports.editProfile = async (req, res) => {
 module.exports.rateAndReview = async (req, res) => {
   const { rate, review, doctorId, appointmentID } = req.body;
   try {
-    // const patientId = decodeToken(token);
-
     const { name } = await Patient.findById(req.patient);
     const { rating, reviews } = await Doctor.findById(doctorId);
 
@@ -926,50 +933,47 @@ module.exports.getDoctorDetails = async (req, res) => {
 
 /*TODO: change name bookAppointment*/
 module.exports.bookAppointment = async (req, res) => {
-  const { drId, date, from, to } = req.body;
+  const { drId, appDate, appFrom, appTo } = req.body;
   const doctor = await Doctor.findById(drId);
   const hospitalId = doctor.hospitalID;
   const schedule = doctor.schedule;
 
-  //TODO: a5od el token adwr bi f new app. w kol app ashof 3ndha drId + date + from kda nfs le dr f nfs el m3a
-  // lw fiha date+from kda mynf3sh nfs el m3ad m3 dr mo5tlf
-
   let obj = doctor.schedule.find(
     (o) =>
-      (o.to === to) &
-      (o.from === from) &
-      (Date.parse(o.date) === Date.parse(date))
+      (o.to === appTo) &
+      (o.from === appFrom) &
+      (Date.parse(o.date) === Date.parse(appDate))
   );
 
   const indexOfScehdule = doctor.schedule.indexOf(obj);
   const flowNumber = obj.AppointmentList.length + 1;
 
   try {
-    // const userId = decodeToken(token);
+    const { newAppointments } = await Patient.findById(req.patient);
+    for (var i = 0; i < newAppointments.length; i++) {
+      console.log("im here");
+      const { doctor, date, from } = await Appointment.findById(
+        newAppointments[i]._id
+      );
+      console.log(
+        newAppointments[i]._id,
+        new Date(appDate).toDateString(),
+        date.toDateString()
+      );
+      if (doctor == drId) {
+        throw new Error(
+          "You already have an upcoming appointment with the same doctor"
+        );
+      } else if (
+        from == appFrom &&
+        date.toDateString() === new Date(appDate).toDateString()
+      ) {
+        console.log("you cannot");
+        throw new Error("You already have an appointment at the same time");
+      }
+    }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
-      // const { newAppointments } = await Patient.findById(req.patient);
-
-      // for (var i = 0; i < newAppointments.length; i++) {
-      //   console.log("im here");
-      //   // console.log(newAppointments.length);
-      //   const { doctor, date, from } = await Appointment.findById(
-      //     newAppointments[i]._id
-      //   );
-      //   console.log(newAppointment[i]._id, doctor, drId);
-      //   /*FIXME: msh byd5ol hena khales
-      //   doctor != drId
-      //   msh 7sah by loop gher mara fa byshof el doctorId mo5tlf
-      //   */
-      //   if (doctor == drId && date == date && from == from) {
-      //     console.log("You cannot book the same appointment twice");
-      //   } else if (date == date && from == from) {
-      //     console.log("You cannot book two appointments at the same time");
-      //   }
-      //   {
-      //     session;
-      //   }
-      // }
       const appointment = await Appointment.create(
         [
           {
@@ -977,8 +981,8 @@ module.exports.bookAppointment = async (req, res) => {
             patient: req.patient,
             doctor: drId,
             date: obj.date,
-            from: from,
-            to: to,
+            from: appFrom,
+            to: appTo,
             flowNumber: flowNumber,
             hospital: hospitalId,
           },
@@ -1008,13 +1012,12 @@ module.exports.bookAppointment = async (req, res) => {
         { session }
       );
     });
-    //console.log(x);
     session.endSession();
     res.status(200).send("Appointment successfully booked");
     console.log("success");
   } catch (error) {
     console.log("error");
-    res.status(400).send("Error booking appointment");
+    res.status(400).send(error.message);
   }
 };
 

@@ -1,7 +1,6 @@
 const { Router } = require("express");
 const auth = require("../middleware/patient_auth");
 
-
 const patientController = require("../controllers/patientController");
 
 const router = Router();
@@ -11,10 +10,12 @@ router.post("/signup", patientController.patientSignup);
 router.post("/login", patientController.patientLogin);
 router.post("/logout", auth, patientController.patientLogout);
 router.post("/verify", auth, patientController.verifyAccount);
+router.post("/resendOTP", auth, patientController.resendOtp);
 router.post("/changePassword", auth, patientController.patientChangePassword);
 router.post("/forgotPassword", patientController.patientForgotPassword);
 router.post(
-  "/forgotPasswordChange", auth,
+  "/forgotPasswordChange",
+  auth,
   patientController.patientForgotPasswordChange
 );
 router.post("/rateAndReview", auth, patientController.rateAndReview);
@@ -45,7 +46,10 @@ router.get(
   "/searchDoctorInSpecInHosp/:id/:specialization/:search",
   patientController.searchDoctorInSpecInHosp
 );
-router.get("/searchSpecializationInHospital/:id/:search", patientController.searchSpecializationInHospital);
+router.get(
+  "/searchSpecializationInHospital/:id/:search",
+  patientController.searchSpecializationInHospital
+);
 
 router.get("/report/:id", patientController.getReport);
 router.get("/homepage", patientController.displayHomepage);
@@ -55,7 +59,8 @@ router.get("/allHospitals", patientController.seeAllHospitals);
 router.get("/allSpecializations", patientController.seeAllSpecializations);
 router.get("/oldAppointment", auth, patientController.oldAppointments);
 router.get(
-  "/upcomingAppointment", auth,
+  "/upcomingAppointment",
+  auth,
   patientController.upcomingAppointments
 );
 router.get("/getPatient", auth, patientController.getPatientProfile);
