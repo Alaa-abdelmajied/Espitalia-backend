@@ -37,9 +37,9 @@ const patientSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    questions: {
-        type: String
-    },
+    // questions: {
+    //     type: String
+    // },
     oldAppointments: {
         type: [mongoose.Types.ObjectId]
     },
@@ -50,12 +50,35 @@ const patientSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    loggedIn: {
-        type: Boolean,
-        default: false
+    diabetic: {
+        type: String,
+        required: [true, 'Please enter an answer']
     },
-    notifications:{
-        type:[mongoose.Types.ObjectId]
+    bloodType: {
+        type: String,
+        required: [true, 'Please enter an answer']
+    },
+    bloodPressure: {
+        type: String,
+        required: [true, 'Please enter an answer']
+    },
+    allergic: {
+        type: String,
+        required: [true, 'Please enter an answer']
+    },
+    allergies: {
+        type: String
+    },
+    // loggedIn: {
+    //     type: Boolean,
+    //     default: false
+    // },
+    unbanIn: {
+        type: Date,
+        default: new Date('1970-01-01T00:00:00.000')
+    },
+    notifications: {
+        type: [mongoose.Types.ObjectId]
     }
 });
 

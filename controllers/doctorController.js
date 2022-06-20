@@ -264,14 +264,27 @@ module.exports.patientDidNotShow = async (req, res) => {
     }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
-      await Patient.updateOne(
-        patient,
-        {
-          unVisits: patient.unVisits + 1,
-        },
-        { session }
-      );
-
+      if (patient.unVisits + 1 == 5) {
+        var banTime = new Date();
+        banTime.setDate(banTime.getDate() + 30);
+        await Patient.findByIdAndUpdate(
+          patientId,
+          {
+            unVisits: 0,
+            unbanIn: banTime
+          },
+          { session }
+        );
+      } else {
+        console.log(patient.unVisits);
+        await Patient.findByIdAndUpdate(
+          patientId,
+          {
+            unVisits: patient.unVisits + 1
+          },
+          { session }
+        );
+      }
       await Doctor.findByIdAndUpdate(
         req.doctor,
         {
