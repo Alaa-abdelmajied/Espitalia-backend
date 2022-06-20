@@ -466,7 +466,7 @@ module.exports.searchDoctorInSpecInHosp = async (req, res) => {
       hospitalID: id,
       specialization: specialization,
       isActive: true,
-    }).select({ _id: 0, name: 1, rating: 1 });
+    }).select({ name: 1, rating: 1 });
     console.log(doctors);
     res.status(200).send(doctors);
   } catch (err) {
