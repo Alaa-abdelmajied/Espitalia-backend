@@ -74,7 +74,8 @@ const sendOtp = async (patientId, patientName, email) => {
 };
 
 module.exports.patientSignup = async (req, res) => {
-  const { email, password, name, phoneNumber, dateOfBirth, gender, questions } =
+  const { email, password, name, phoneNumber, dateOfBirth, gender,
+    diabetic, bloodType, bloodPressure, allergic, allergies } =
     req.body;
   try {
     const patient = await Patient.create({
@@ -84,7 +85,11 @@ module.exports.patientSignup = async (req, res) => {
       phoneNumber,
       dateOfBirth,
       gender,
-      questions,
+      diabetic, 
+      bloodType, 
+      bloodPressure, 
+      allergic, 
+      allergies
     });
     const token = createToken(patient.id);
     sendOtp(patient.id, patient.name, patient.email);
