@@ -92,6 +92,7 @@ module.exports.patientSignup = async (req, res) => {
     bloodPressure,
     allergic,
     allergies,
+    fcmToken,
   } = req.body;
   try {
     const patient = await Patient.create({
@@ -106,6 +107,7 @@ module.exports.patientSignup = async (req, res) => {
       bloodPressure,
       allergic,
       allergies,
+      fcmToken,
     });
     const token = createToken(patient.id);
     sendOtp(patient.id, patient.name, patient.email);
