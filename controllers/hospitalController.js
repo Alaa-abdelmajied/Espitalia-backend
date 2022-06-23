@@ -9,6 +9,7 @@ const jsonwebtoken = require('jsonwebtoken');
 const date = require('date-and-time');
 const nodemailer = require("nodemailer");
 const conn = require("../db");
+const Patient = require('../models/Patient');
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -499,7 +500,7 @@ module.exports.hospitalSearchDoctor = async (req, res) => {
 
 }
 
-module.exports.hospitalSearchReceptionist = async(req,res)=>{
+module.exports.hospitalSearchReceptionist = async (req, res) => {
     const search = req.params.search;
     const hospitalID = req.hospital._id;
     try {
@@ -514,13 +515,34 @@ module.exports.hospitalSearchReceptionist = async(req,res)=>{
 
 }
 
-module.exports.getProfile = async (req,res)=>{
-    try{
-        const hospitalData= await Hospital.findById(req.hospital._id);
+module.exports.getProfile = async (req, res) => {
+    try {
+        const hospitalData = await Hospital.findById(req.hospital._id);
         res.status(200).send(hospitalData);
-  
+
     }
-    catch(error){
+    catch (error) {
         res.status(404).send('data not found');
     }
-  }
+};
+
+module.exports.editProfile = async (req, res) => {
+    try {
+        const {
+            newName,
+            newAddress,
+            newEmail,
+        } = req.body;
+        const hospital = await Hospital.findByIdAndUpdate(req.hospital, {
+            $set: {
+                name: newName,
+                email: newEmail,
+                address: newAddress,
+            }
+        });
+    }
+    catch (err) {
+        res.status(404).send("Hospital not found");
+        res.send(await Hospital.findById(req.hospital));
+    }
+}

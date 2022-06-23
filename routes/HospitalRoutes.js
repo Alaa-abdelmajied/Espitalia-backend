@@ -33,8 +33,8 @@ router.put('/addWorkingDay', auth, hospitalController.addWorkingDay);
 
 router.put('/deactivateReceptionist', auth, hospitalController.deactivateReceptionist);
 router.put('/activateReceptionist', auth, hospitalController.activateReceptionist);
-//
 router.put('/removeWorkingDayRecept', auth, hospitalController.removeWorkingDayRecept);
 router.put('/addWorkingDayRecept', auth, hospitalController.addWorkingDayRecept);
+router.put('/editProfile',auth,hospitalController.editProfile)
 
 module.exports = router;
