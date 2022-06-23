@@ -94,6 +94,7 @@ module.exports.patientSignup = async (req, res) => {
     allergies,
     fcmToken,
   } = req.body;
+  console.log("fcmtoken from backend",fcmToken);
   try {
     const patient = await Patient.create({
       email,
