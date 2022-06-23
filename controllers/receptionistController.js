@@ -1,3 +1,4 @@
+const fetch = require('node-fetch');
 const { Doctor, Schedule } = require('../models/Doctor');
 const BloodRequest = require('../models/BloodRequests');
 const Receptionist = require('../models/Receptionist');
@@ -10,7 +11,6 @@ const OfflinePatient = require('../models/OfflinePatient');
 const Notification = require('../models/Notifications');
 
 const ObjectId = require("mongodb").ObjectId;
-
 
 const conn = require("../db");
 
@@ -31,6 +31,37 @@ module.exports.Login = async (req, res) => {
 
 module.exports.CreateBloodRequest = async (req, res) => {
   const { bloodType } = req.body;
+  
+  const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'key=AAAACuOwo1M:APA91bEXOxZzUg_14sDwUZV7oDq3zIs9CqYBhzpclvbdxUldhg7gn4O7dAoZ2lTRYRsfoRaJKD_V0iT0kOdqcxQMWGE6sLEKXAtW1tQ2j-56FV-cLlN2MfmNftTkSWq_smPfYzfRz6qo'
+    },
+    body: JSON.stringify({
+      "to": "dhqGMQELQDCfNggF-YOzDp:APA91bHvuS3um0gXqHrqrdhItToS__I16a24of6Cwv1aThwazU0Yh-wnjV1CAhmTFRT0kUun3EdAYt-HLxkU8STQvJO2mgrvF8l3LLJdvzWbozklDs0GpBivW3cRhv91xBgTn3qaPFz6",
+      "collapse_key": "type_a",
+      "notification": {
+        "body": "New Blood Request",
+        "title": `Blood Request for ${bloodType}`,
+        // "icon": "ic_launcher",
+        "sound": "default"
+      },
+      "data": {
+        "body": "New Blood Request",
+        "title": "Blood Request for " + bloodType,
+        "key_1": "Value for key_1",
+        "key_2": "Value for key_2"
+      }
+    })
+  }).then(function(response){
+    response.json();
+    console.log(response);
+    res.status(200).send("Request sent successfully");
+  }).catch(function(error){
+    console.log(error);
+  });
+
   const receptionistID = req.receptionist._id;
   var hospitalID = await Receptionist.findById(receptionistID).select("hospitalID -_id");
   hospitalID = hospitalID.hospitalID;
@@ -64,7 +95,7 @@ module.exports.finalizeBloodRequest = async (req, res) => {
   const { id } = req.body;
   try {
     console.log(id);
-    const request = await BloodRequest.findByIdAndUpdate(id, {isVisible: false});
+    const request = await BloodRequest.findByIdAndUpdate(id, { isVisible: false });
     res.status(200).send("Finalized");
   }
   catch (err) {
@@ -73,25 +104,25 @@ module.exports.finalizeBloodRequest = async (req, res) => {
 }
 
 module.exports.getBloodRequests = async (req, res) => {
-  try{
+  try {
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: true}).sort({date: -1});
+    const requests = await BloodRequest.find({ hospitalID: hospitalID, isVisible: true }).sort({ date: -1 });
     res.send(requests);
   }
-  catch(err) {
+  catch (err) {
     res.status(400).send("error");
   }
 }
 
 module.exports.getOldBloodRequests = async (req, res) => {
-  try{
+  try {
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: false}).sort({date: -1});
+    const requests = await BloodRequest.find({ hospitalID: hospitalID, isVisible: false }).sort({ date: -1 });
     res.send(requests);
   }
-  catch(err) {
+  catch (err) {
     res.status(400).send("error");
   }
 }
@@ -119,25 +150,25 @@ module.exports.GetSpecializations = async (req, res) => {
 
 }
 
-module.exports.searchSpecializations = async (req,res) => {
+module.exports.searchSpecializations = async (req, res) => {
   console.log
-  try{
-     const receptionist = await Receptionist.findById(req.receptionist._id);
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id);
     const hospitalID = await receptionist.hospitalID;
     const hospital = await Hospital.findOne({ _id: hospitalID });
     let search = req.params.search;
 
     // console.log(hospital.specialization);
-    let array =[];
-    search =  ".*" + search + ".*";
+    let array = [];
+    search = ".*" + search + ".*";
     //console.log(search);
-    for(var i = 0 ; i < hospital.specialization.length ; i++){
-      if(hospital.specialization[i].toUpperCase().match(search.toUpperCase()))
-          array.push(hospital.specialization[i]);
+    for (var i = 0; i < hospital.specialization.length; i++) {
+      if (hospital.specialization[i].toUpperCase().match(search.toUpperCase()))
+        array.push(hospital.specialization[i]);
     }
     console.log(array);
     res.status(200).send(array);
-  }catch{
+  } catch {
     res.status(400).send(err);
   }
 }
