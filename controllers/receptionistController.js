@@ -17,7 +17,7 @@ const conn = require("../db");
 module.exports.Login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const receptionist = await Receptionist.receptionistLogin( email,password );
+    const receptionist = await Receptionist.receptionistLogin(email, password);
     if (!receptionist) return res.status(400).send('bad request');
     const token = receptionist.generateAuthToken();
     res.header('x-auth-token', token).send(receptionist);
@@ -29,40 +29,48 @@ module.exports.Login = async (req, res) => {
 
 module.exports.CreateBloodRequest = async (req, res) => {
   const { bloodType } = req.body;
-  
-  const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'key=AAAACuOwo1M:APA91bEXOxZzUg_14sDwUZV7oDq3zIs9CqYBhzpclvbdxUldhg7gn4O7dAoZ2lTRYRsfoRaJKD_V0iT0kOdqcxQMWGE6sLEKXAtW1tQ2j-56FV-cLlN2MfmNftTkSWq_smPfYzfRz6qo'
-    },
-    body: JSON.stringify({
-      "to": "dhqGMQELQDCfNggF-YOzDp:APA91bHvuS3um0gXqHrqrdhItToS__I16a24of6Cwv1aThwazU0Yh-wnjV1CAhmTFRT0kUun3EdAYt-HLxkU8STQvJO2mgrvF8l3LLJdvzWbozklDs0GpBivW3cRhv91xBgTn3qaPFz6",
-      "collapse_key": "type_a",
-      "notification": {
-        "body": "New Blood Request",
-        "title": `Blood Request for ${bloodType}`,
-        // "icon": "ic_launcher",
-        "sound": "default"
-      },
-      "data": {
-        "body": "New Blood Request",
-        "title": "Blood Request for " + bloodType,
-        "key_1": "Value for key_1",
-        "key_2": "Value for key_2"
-      }
-    })
-  }).then(function(response){
-    response.json();
-    console.log(response);
-    res.status(200).send("Request sent successfully");
-  }).catch(function(error){
-    console.log(error);
-  });
-
   const receptionistID = req.receptionist._id;
   var hospitalID = await Receptionist.findById(receptionistID).select("hospitalID -_id");
   hospitalID = hospitalID.hospitalID;
+  var hospital = await Hospital.findOne({ _id: hospitalID }).select("name -_id");
+  console.log(hospital.name);
+  const tokens = await Patient.find().select("fcmToken -_id");
+  console.log(tokens);
+  for (var i = 0; i < tokens.length; i++) {
+    var token = tokens[i].fcmToken;
+    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'key=AAAACuOwo1M:APA91bEXOxZzUg_14sDwUZV7oDq3zIs9CqYBhzpclvbdxUldhg7gn4O7dAoZ2lTRYRsfoRaJKD_V0iT0kOdqcxQMWGE6sLEKXAtW1tQ2j-56FV-cLlN2MfmNftTkSWq_smPfYzfRz6qo'
+      },
+      body: JSON.stringify({
+        "to": `${token}`,
+        "collapse_key": "type_a",
+        "notification": {
+          "title": `Blood Request at ${hospital.name}`,
+          "body": `New Blood Request: ${bloodType} blood needed in ${hospital.name} ASAP!`,
+          "icon": "ic_launcher",
+          "sound": "default"
+        },
+        "data": {
+          "body": "New Blood Request",
+          "title": "Blood Request for " + bloodType,
+          "key_1": "Value for key_1",
+          "key_2": "Value for key_2"
+        }
+      })
+    }).then((response) => {
+      response.json();
+
+    }).catch(function (error) {
+      console.log(error);
+    });
+    console.log({ response });
+  };
+
+
+
   try {
     const request = await BloodRequest.create({
       bloodType,
@@ -75,6 +83,7 @@ module.exports.CreateBloodRequest = async (req, res) => {
   catch (err) {
     res.status(400).send(err);
   }
+  // res.status(200).send("Request sent successfully");
 }
 
 module.exports.DropBloodRequest = async (req, res) => {

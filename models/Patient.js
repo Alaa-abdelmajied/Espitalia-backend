@@ -82,6 +82,9 @@ const patientSchema = new mongoose.Schema({
     },
     fcmToken: {
         type: String
+    },
+    APNSToken: {
+        type: String
     }
 });
 
