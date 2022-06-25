@@ -37,7 +37,7 @@ const sendOtp = async (patientId, patientName, email) => {
     lowerCaseAlphabets: false,
     specialChars: false,
   });
-  const account = await WaitingVerfication.findOne({ patient: patientId });
+  const account = await WaitingVerfication.findOne({ user: patientId });
   console;
   if (account) {
     await WaitingVerfication.updateOne(account, {
@@ -45,7 +45,7 @@ const sendOtp = async (patientId, patientName, email) => {
     });
   } else {
     await WaitingVerfication.create({
-      patient: patientId,
+      user: patientId,
       otp: otp,
     });
   }
@@ -152,7 +152,7 @@ module.exports.verifyAccount = async (req, res) => {
   const { otp, forgot } = req.body;
   try {
     const waitingVerfication = await WaitingVerfication.findOne({
-      patient: req.patient,
+      user: req.patient,
     });
     if (otp == waitingVerfication.otp) {
       if (!forgot) {
@@ -163,7 +163,7 @@ module.exports.verifyAccount = async (req, res) => {
           }
         );
       }
-      await WaitingVerfication.deleteOne({ patient: req.patient });
+      await WaitingVerfication.deleteOne({ user: req.patient });
       res.status(200).send("Verified");
     } else {
       res.status(400).send("Wrong Otp");

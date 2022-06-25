@@ -5,6 +5,15 @@ const auth = require("../middleware/doctor_auth");
 
 //POST Routes
 router.post("/login", doctorController.Login);
+router.post("/verify", auth, doctorController.verifyAccount);
+router.post("/resendOTP", auth, doctorController.resendOtp);
+router.post("/changePassword", auth, doctorController.changePassword);
+router.post("/forgotPassword", doctorController.forgotPassword);
+router.post(
+  "/forgotPasswordChange",
+  auth,
+  doctorController.forgotPasswordChange
+);
 router.post(
   "/addReportAndPrescription",
   doctorController.addReportAndPrescription

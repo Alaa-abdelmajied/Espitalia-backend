@@ -4,20 +4,74 @@ const Receptionist = require('../models/Receptionist');
 const Patient = require('../models/Patient');
 const { array, date } = require('joi');
 const jwt = require('jsonwebtoken');
+const nodemailer = require("nodemailer");
+const otpGenerator = require("otp-generator");
 const Hospital = require('../models/Hospital');
 const Appointment = require('../models/Appointment');
 const OfflinePatient = require('../models/OfflinePatient');
 const Notification = require('../models/Notifications');
+const WaitingVerfication = require("../models/WaitingVerfication");
 
 const ObjectId = require("mongodb").ObjectId;
 
 
 const conn = require("../db");
 
+const createToken = (id) => {
+  return jwt.sign({ _id: id }, "PrivateKey");
+};
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "espitalia.app.gp",
+    pass: "ovxfmxqneryirltk",
+  },
+});
+
+const sendOtp = async (receptionistId, receptionistName, email) => {
+  const otp = otpGenerator.generate(5, {
+    digits: true,
+    upperCaseAlphabets: false,
+    lowerCaseAlphabets: false,
+    specialChars: false,
+  });
+  const account = await WaitingVerfication.findOne({ user: receptionistId });
+  console;
+  if (account) {
+    await WaitingVerfication.updateOne(account, {
+      otp: otp,
+    });
+  } else {
+    await WaitingVerfication.create({
+      user: receptionistId,
+      otp: otp,
+    });
+  }
+  const confirmationMail = {
+    from: "espitalia.app.gp@gmail.com",
+    to: email,
+    subject: "Verify your account",
+    html:
+      "Receptionist " +
+      receptionistName +
+      ",<br/><br/> Please enter this code in the application: <br/>" +
+      otp +
+      "<br/><br/>Thanks and regards , <br/>      Espitalia",
+  };
+  transporter.sendMail(confirmationMail, function (error, info) {
+    if (error) {
+      console.log("Email" + error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+};
+
 module.exports.Login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const receptionist = await Receptionist.receptionistLogin( email,password );
+    const receptionist = await Receptionist.receptionistLogin(email, password);
     if (!receptionist) return res.status(400).send('bad request');
     const token = receptionist.generateAuthToken();
     res.header('x-auth-token', token).send(receptionist);
@@ -26,6 +80,73 @@ module.exports.Login = async (req, res) => {
     res.status(400).send(error);
   }
 }
+
+module.exports.verifyAccount = async (req, res) => {
+  const { otp } = req.body;
+  try {
+    const waitingVerfication = await WaitingVerfication.findOne({
+      user: req.receptionist._id,
+    });
+    if (otp == waitingVerfication.otp) {
+      await WaitingVerfication.deleteOne({ user: req.receptionist._id });
+      res.status(200).send("Verified");
+    } else {
+      res.status(400).send("Wrong Otp");
+    }
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.resendOtp = async (req, res) => {
+  try {
+    const { name, email } = await Receptionist.findById(req.receptionist._id);
+    sendOtp(req.receptionist._id, name, email);
+    res.status(200).send();
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  try {
+    const result = await Receptionist.changePassword(
+      req.receptionist._id,
+      oldPassword,
+      newPassword
+    );
+    res.status(200).send(result);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const receptionist = await Receptionist.findOne({ email });
+    if (receptionist) {
+      sendOtp(receptionist.id, receptionist.name, receptionist.email);
+      const token = createToken(receptionist.id);
+      res.status(201).send({ token });
+    } else {
+      res.status(404).send("This email does not exist");
+    }
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.forgotPasswordChange = async (req, res) => {
+  const { newPassword } = req.body;
+  try {
+    const result = await Receptionist.forgotPassword(req.receptionist._id, newPassword);
+    res.status(200).send(result);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
 
 module.exports.CreateBloodRequest = async (req, res) => {
   const { bloodType } = req.body;
@@ -62,7 +183,7 @@ module.exports.finalizeBloodRequest = async (req, res) => {
   const { id } = req.body;
   try {
     console.log(id);
-    const request = await BloodRequest.findByIdAndUpdate(id, {isVisible: false});
+    const request = await BloodRequest.findByIdAndUpdate(id, { isVisible: false });
     res.status(200).send("Finalized");
   }
   catch (err) {
@@ -71,25 +192,25 @@ module.exports.finalizeBloodRequest = async (req, res) => {
 }
 
 module.exports.getBloodRequests = async (req, res) => {
-  try{
+  try {
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: true}).sort({date: -1});
+    const requests = await BloodRequest.find({ hospitalID: hospitalID, isVisible: true }).sort({ date: -1 });
     res.send(requests);
   }
-  catch(err) {
+  catch (err) {
     res.status(400).send("error");
   }
 }
 
 module.exports.getOldBloodRequests = async (req, res) => {
-  try{
+  try {
     var hospitalID = await Receptionist.findById(req.receptionist._id).select("hospitalID -_id");
     hospitalID = hospitalID.hospitalID;
-    const requests = await BloodRequest.find({hospitalID: hospitalID, isVisible: false}).sort({date: -1});
+    const requests = await BloodRequest.find({ hospitalID: hospitalID, isVisible: false }).sort({ date: -1 });
     res.send(requests);
   }
-  catch(err) {
+  catch (err) {
     res.status(400).send("error");
   }
 }
@@ -112,25 +233,25 @@ module.exports.GetSpecializations = async (req, res) => {
 
 }
 
-module.exports.searchSpecializations = async (req,res) => {
+module.exports.searchSpecializations = async (req, res) => {
   console.log
-  try{
-     const receptionist = await Receptionist.findById(req.receptionist._id);
+  try {
+    const receptionist = await Receptionist.findById(req.receptionist._id);
     const hospitalID = await receptionist.hospitalID;
     const hospital = await Hospital.findOne({ _id: hospitalID });
     let search = req.params.search;
 
     // console.log(hospital.specialization);
-    let array =[];
-    search =  ".*" + search + ".*";
+    let array = [];
+    search = ".*" + search + ".*";
     //console.log(search);
-    for(var i = 0 ; i < hospital.specialization.length ; i++){
-      if(hospital.specialization[i].toUpperCase().match(search.toUpperCase()))
-          array.push(hospital.specialization[i]);
+    for (var i = 0; i < hospital.specialization.length; i++) {
+      if (hospital.specialization[i].toUpperCase().match(search.toUpperCase()))
+        array.push(hospital.specialization[i]);
     }
     console.log(array);
     res.status(200).send(array);
-  }catch{
+  } catch {
     res.status(400).send(err);
   }
 }

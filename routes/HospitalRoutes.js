@@ -7,6 +7,21 @@ const router = Router();
 
 //TODO: POST request:
 router.post('/login', hospitalController.Login);
+
+router.post("/verify", auth, hospitalController.verifyAccount);
+
+router.post("/resendOTP", auth, hospitalController.resendOtp);
+
+router.post("/changePassword", auth, hospitalController.changePassword);
+
+router.post("/forgotPassword", hospitalController.forgotPassword);
+
+router.post(
+    "/forgotPasswordChange",
+    auth,
+    hospitalController.forgotPasswordChange
+);
+
 router.post('/logout', auth, hospitalController.Logout);
 
 router.post('/addDoctor', auth, hospitalController.addDoctor);
@@ -18,12 +33,12 @@ router.post('/addReceptionist', auth, hospitalController.addReceptionist);
 router.get('/viewDoctors', auth, hospitalController.viewDoctors);
 router.get('/getDoctor/:doctorID', auth, hospitalController.getDoctor);
 router.get('/getSpecializations', auth, hospitalController.getSpecializations);
-router.get('/searchDoctors/:search',auth,hospitalController.hospitalSearchDoctor);
+router.get('/searchDoctors/:search', auth, hospitalController.hospitalSearchDoctor);
 
 router.get('/getReceptionist/:receptID', auth, hospitalController.getReceptionist);
 router.get('/viewReceptionists', auth, hospitalController.viewReceptionists);
-router.get('/searchReceptionist/:search',auth,hospitalController.hospitalSearchReceptionist);
-router.get('/getProfile',auth,hospitalController.getProfile);
+router.get('/searchReceptionist/:search', auth, hospitalController.hospitalSearchReceptionist);
+router.get('/getProfile', auth, hospitalController.getProfile);
 
 //TODO: PUT request:
 router.put('/deactivateDoctor', auth, hospitalController.deactivateDoctor);
