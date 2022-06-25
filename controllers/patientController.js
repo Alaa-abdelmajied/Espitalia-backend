@@ -92,7 +92,9 @@ module.exports.patientSignup = async (req, res) => {
     bloodPressure,
     allergic,
     allergies,
+    fcmToken,
   } = req.body;
+  console.log("fcmtoken from backend",fcmToken);
   try {
     const patient = await Patient.create({
       email,
@@ -106,6 +108,7 @@ module.exports.patientSignup = async (req, res) => {
       bloodPressure,
       allergic,
       allergies,
+      fcmToken,
     });
     const token = createToken(patient.id);
     sendOtp(patient.id, patient.name, patient.email);
