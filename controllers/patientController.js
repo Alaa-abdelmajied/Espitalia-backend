@@ -94,7 +94,7 @@ module.exports.patientSignup = async (req, res) => {
     allergies,
     fcmToken,
   } = req.body;
-  console.log("fcmtoken from backend",fcmToken);
+  // console.log("fcmtoken from backend",fcmToken);
   try {
     const patient = await Patient.create({
       email,
@@ -131,6 +131,7 @@ module.exports.patientLogin = async (req, res) => {
           patient.unbanIn.toLocaleString()
       );
     }
+    await Patient.findByIdAndUpdate(patient._id, {fcmToken: req.body.fcmToken});
     const token = createToken(patient.id);
     if (!patient.verified) {
       sendOtp(patient.id, patient.name, patient.email);
@@ -144,7 +145,9 @@ module.exports.patientLogin = async (req, res) => {
 };
 
 module.exports.patientLogout = async (req, res) => {
+  const patientID = req.patient;
   try {
+    const patient = await Patient.findByIdAndUpdate(patientID, {fcmToken: ""});
     res.status(200).send("Logged Out");
   } catch (err) {
     res.status(400).send(err.message);

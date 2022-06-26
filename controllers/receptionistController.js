@@ -36,6 +36,26 @@ module.exports.CreateBloodRequest = async (req, res) => {
   console.log(hospital.name);
   const tokens = await Patient.find().select("fcmToken -_id");
   console.log(tokens);
+  var request;
+  try {
+    request = await BloodRequest.create({
+      bloodType,
+      hospitalID,
+      receptionistID
+    });
+    // console.log(request);
+    // return res.status(200).send(request);
+  }
+  catch (err) {
+    res.status(400).send(err);
+    return;
+  }
+  sendNotification(tokens, hospital, bloodType);
+  res.status(200).send(request);
+  // res.status(200).send("Request sent successfully");
+}
+
+const sendNotification = async (tokens, hospital, bloodType) => {
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i].fcmToken;
     const response = await fetch('https://fcm.googleapis.com/fcm/send', {
@@ -45,19 +65,20 @@ module.exports.CreateBloodRequest = async (req, res) => {
         'Authorization': 'key=AAAACuOwo1M:APA91bEXOxZzUg_14sDwUZV7oDq3zIs9CqYBhzpclvbdxUldhg7gn4O7dAoZ2lTRYRsfoRaJKD_V0iT0kOdqcxQMWGE6sLEKXAtW1tQ2j-56FV-cLlN2MfmNftTkSWq_smPfYzfRz6qo'
       },
       body: JSON.stringify({
-        "to": `${token}`,
-        "collapse_key": "type_a",
-        "notification": {
-          "title": `Blood Request at ${hospital.name}`,
-          "body": `New Blood Request: ${bloodType} blood needed in ${hospital.name} ASAP!`,
-          "icon": "ic_launcher",
-          "sound": "default"
+        to: `${token}`,
+        collapse_key: "type_a",
+        notification: {
+          title: `Blood Request at ${hospital.name}`,
+          body: `New Blood Request: ${bloodType} blood needed in ${hospital.name} ASAP!`,
+          icon: "ic_launcher",
+          sound: "default"
         },
-        "data": {
-          "body": "New Blood Request",
-          "title": "Blood Request for " + bloodType,
-          "key_1": "Value for key_1",
-          "key_2": "Value for key_2"
+        data: {
+          body: "New Blood Request",
+          icon: "ic_launcher",
+          title: "Blood Request for " + bloodType,
+          key_1: "Value for key_1",
+          key_2: "Value for key_2"
         }
       })
     }).then((response) => {
@@ -67,23 +88,7 @@ module.exports.CreateBloodRequest = async (req, res) => {
       console.log(error);
     });
     console.log({ response });
-  };
-
-
-
-  try {
-    const request = await BloodRequest.create({
-      bloodType,
-      hospitalID,
-      receptionistID
-    });
-    res.send(request);
-    // console.log(request);
   }
-  catch (err) {
-    res.status(400).send(err);
-  }
-  // res.status(200).send("Request sent successfully");
 }
 
 module.exports.DropBloodRequest = async (req, res) => {
@@ -306,6 +311,8 @@ module.exports.cancelAppointment = async (req, res) => {
   const { appointmentID } = req.body;
   try {
     const { patient, doctor } = await Appointment.findById(appointmentID);
+    var fcmToken = await Patient.findById(patient).select('fcmToken -_id');
+    fcmToken = fcmToken.fcmToken;
     const { schedule } = await Doctor.findById(doctor);
     const session = await conn.startSession();
     await session.withTransaction(async () => {
@@ -339,6 +346,36 @@ module.exports.cancelAppointment = async (req, res) => {
       );
     });
     session.endSession();
+    var response = await fetch(`https://fcm.googleapis.com/fcm/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `key=AAAACuOwo1M:APA91bEXOxZzUg_14sDwUZV7oDq3zIs9CqYBhzpclvbdxUldhg7gn4O7dAoZ2lTRYRsfoRaJKD_V0iT0kOdqcxQMWGE6sLEKXAtW1tQ2j-56FV-cLlN2MfmNftTkSWq_smPfYzfRz6qo`
+      },
+      body: JSON.stringify({
+        to: fcmToken,
+        notification: {
+          title: 'Appointment Cancelled',
+          body: 'Your appointment might been cancelled, please check your appointments list',
+          sound: 'default',
+          click_action: 'FCM_PLUGIN_ACTIVITY',
+          icon: 'https://i.ibb.co/Ps2q5mL/ic-launcher.png'
+        },
+        data: {
+          message: 'Your appointment has been cancelled, please check your appointments list',
+          title: 'Appointment Cancelled',
+          sound: 'default',
+          click_action: 'FCM_PLUGIN_ACTIVITY',
+          icon: 'https://i.ibb.co/Ps2q5mL/ic-launcher.png'
+        }
+      })
+    }).then((response) => {
+      response.json();
+
+    }).catch(function (error) {
+      console.log(error);
+    });
+    console.log({ response });
     res.status(200).send("Appointment cancelled successfully");
   }
   catch (error) {
