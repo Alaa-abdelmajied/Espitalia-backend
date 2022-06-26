@@ -125,13 +125,13 @@ module.exports.patientLogin = async (req, res) => {
     if (patient.unbanIn > Date.now()) {
       throw new Error(
         'Your account "' +
-          email +
-          '" is banned as you did not show up at your' +
-          " reservation time for five times. This ban ends at " +
-          patient.unbanIn.toLocaleString()
+        email +
+        '" is banned as you did not show up at your' +
+        " reservation time for five times. This ban ends at " +
+        patient.unbanIn.toLocaleString()
       );
     }
-    await Patient.findByIdAndUpdate(patient._id, {fcmToken: req.body.fcmToken});
+    await Patient.findByIdAndUpdate(patient._id, { fcmToken: req.body.fcmToken });
     const token = createToken(patient.id);
     if (!patient.verified) {
       sendOtp(patient.id, patient.name, patient.email);
@@ -147,7 +147,7 @@ module.exports.patientLogin = async (req, res) => {
 module.exports.patientLogout = async (req, res) => {
   const patientID = req.patient;
   try {
-    const patient = await Patient.findByIdAndUpdate(patientID, {fcmToken: ""});
+    const patient = await Patient.findByIdAndUpdate(patientID, { fcmToken: "" });
     res.status(200).send("Logged Out");
   } catch (err) {
     res.status(400).send(err.message);
@@ -920,32 +920,44 @@ module.exports.getDoctorDetails = async (req, res) => {
     }
 
     const currentDate = new Date();
-    const currentTime = currentDate.toLocaleTimeString("en-GB").substring(0, 5);
-    console.log(
-      "new date",
-      "hours==>",
-      currentDate.toLocaleTimeString("en-GB").substring(0, 5),
-      currentTime,
-      currentDate.toLocaleDateString()
-    );
-    const s = "01:00";
-    if (s > currentDate.toLocaleTimeString()) {
-      console.log("akbar");
-    } else {
-      console.log("asghar");
-    }
+
+    // if(currentDate > scheduleDate){
+    //   console.log('akbar');
+    // }else{
+    //   console.log('asghar')
+    // }
+    // console.log(scheduleDate);
+    // console.log(scheduleDate);
+    // const currentTime = currentDate.toLocaleTimeString("en-GB").substring(0, 5);
+    // console.log(
+    //   "new date",
+    //   "hours==>",
+    //   currentDate.toLocaleTimeString("en-GB").substring(0, 5),
+    //   currentTime,
+    //   currentDate.toLocaleDateString()
+    // );
+    // const s = "01:00";
+    // if (s > currentDate.toLocaleTimeString()) {
+    //   console.log("akbar");
+    // } else {
+    //   console.log("asghar");
+    // }
     for (var i = 0; i < schedule.length; i++) {
+      const scheduleDate = schedule[i].date;
+      scheduleDate.setHours(schedule[i].to.substring(0, 2), schedule[i].to.substring(3, 5));
       console.log(schedule[i].date.toLocaleDateString());
-      // if (
-      //   currentTime < schedule[i].to 
-      //   // && currentDate.toDateString() < schedule[i].date.toDateString()
-      // ) {
+      if (currentDate < scheduleDate) {
+        // if (
+        //   currentTime < schedule[i].to 
+        //   // && currentDate.toDateString() < schedule[i].date.toDateString()
+        // ) {
         scheduleDetails.push({
           date: schedule[i].date,
           from: schedule[i].from,
           to: schedule[i].to,
           displayDate: schedule[i].date.toDateString(),
         });
+      }
       //   console.log(
       //     "not yet",
       //     currentTime,
