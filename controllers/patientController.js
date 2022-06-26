@@ -333,9 +333,6 @@ module.exports.seeAllSpecializations = async (req, res) => {
   }
 };
 
-const d = new Date();
-console.log(d, d.toLocaleString());
-
 //search be el talata (array w ba push fyha beltartyb 0:drs 1:hospital 2:specialization)
 module.exports.patientGeneralSearch = async (req, res) => {
   const search = req.params.search;
@@ -649,21 +646,9 @@ module.exports.getNotification = async (req, res) => {
   try {
     const notification = await Notifications.find({ userID: req.patient });
     console.log(notification[0].date.toLocaleString());
-    res.send(notification);
+    res.status(200).send(notification);
   } catch (err) {
     res.status(400).send(err.message);
-  }
-};
-
-module.exports.isBloodReqUpdated = async (req, res) => {
-  const { date } = req.params;
-  try {
-    const newEntries = await BloodRequests.count({
-      date: { $gt: new Date(date) },
-    });
-    res.status(200).send({ newEntries });
-  } catch (err) {
-    res.status(500).send(err.message);
   }
 };
 
@@ -692,6 +677,23 @@ module.exports.getBloodRequests = async (req, res) => {
   } catch (err) {
     res.status(400).send(err.message);
   }
+};
+
+module.exports.isBloodReqUpdated = async (req, res) => {
+  const { date } = req.params;
+  try {
+    const newEntries = await BloodRequests.count({
+      date: { $gt: new Date(date) },
+    });
+    res.status(200).send({ newEntries });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
+
+//TODO:
+module.exports.acceptBloodRequest = async (req, res) => {
+  console.log("blood request");
 };
 
 //Get Report
@@ -741,7 +743,9 @@ module.exports.oldAppointments = async (req, res) => {
         date: date.toDateString(),
       });
     }
-    res.status(200).send(appointmentDetails);
+    if (appointmentDetails.length == 0)
+      return res.status(404).send("No old appointments");
+    else res.status(200).send(appointmentDetails);
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -879,8 +883,7 @@ module.exports.getDoctorDetails = async (req, res) => {
   var doctorData = [];
   var reviewDetails = [];
   var scheduleDetails = [];
-  const currentTime = new Date().toLocaleTimeString("en-GB").substring(0, 5);
-  console.log("new date", "hours==>", currentTime);
+
   try {
     const { name, hospitalID, reviews, schedule, rating, specialization } =
       await Doctor.findById(doctorId);
@@ -910,20 +913,49 @@ module.exports.getDoctorDetails = async (req, res) => {
       });
     }
 
+    const currentDate = new Date();
+    const currentTime = currentDate.toLocaleTimeString("en-GB").substring(0, 5);
+    console.log(
+      "new date",
+      "hours==>",
+      currentDate.toLocaleTimeString("en-GB").substring(0, 5),
+      currentTime,
+      currentDate.toLocaleDateString()
+    );
+    const s = "01:00";
+    if (s > currentDate.toLocaleTimeString()) {
+      console.log("akbar");
+    } else {
+      console.log("asghar");
+    }
     for (var i = 0; i < schedule.length; i++) {
-      scheduleDetails.push({
-        date: schedule[i].date,
-        from: schedule[i].from,
-        to: schedule[i].to,
-        displayDate: schedule[i].date.toDateString(),
-      });
-      const x = "01:00";
-      console.log(x, currentTime);
-      if (x > currentTime) {
-        console.log("not yet");
-      } else {
-        console.log("passed");
-      }
+      console.log(schedule[i].date.toLocaleDateString());
+      // if (
+      //   currentTime < schedule[i].to 
+      //   // && currentDate.toDateString() < schedule[i].date.toDateString()
+      // ) {
+        scheduleDetails.push({
+          date: schedule[i].date,
+          from: schedule[i].from,
+          to: schedule[i].to,
+          displayDate: schedule[i].date.toDateString(),
+        });
+      //   console.log(
+      //     "not yet",
+      //     currentTime,
+      //     schedule[i].to,
+      //     currentDate,
+      //     schedule[i].date.toLocaleDateString()()
+      //   );
+      // } else {
+      //   console.log(
+      //     "passed",
+      //     currentTime,
+      //     schedule[i].to,
+      //     currentDate,
+      //     schedule[i].date.toLocaleDateString()()
+      //   );
+      // }
     }
     res.status(200).send({ doctorData, reviewDetails, scheduleDetails });
   } catch (err) {
@@ -946,7 +978,6 @@ module.exports.bookAppointment = async (req, res) => {
   );
 
   const indexOfScehdule = doctor.schedule.indexOf(obj);
-  const flowNumber = obj.AppointmentList.length + 1;
 
   try {
     const { newAppointments } = await Patient.findById(req.patient);
@@ -974,6 +1005,7 @@ module.exports.bookAppointment = async (req, res) => {
     }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
+      const reservationNumber = obj.AppointmentList.length + 1;
       const appointment = await Appointment.create(
         [
           {
@@ -983,7 +1015,7 @@ module.exports.bookAppointment = async (req, res) => {
             date: obj.date,
             from: appFrom,
             to: appTo,
-            flowNumber: flowNumber,
+            flowNumber: reservationNumber,
             hospital: hospitalId,
           },
         ],
@@ -998,7 +1030,6 @@ module.exports.bookAppointment = async (req, res) => {
         },
         { session }
       );
-
       obj.AppointmentList.push(appointment[0]._id);
       schedule[indexOfScehdule] = obj;
 
