@@ -554,6 +554,24 @@ module.exports.getMyData = async (req, res) => {
     res.status(404).send('not found');
   }
 }
+module.exports.viewDonors = async (req, res) => {
+  try {
+    const bloodReqID = req.params.id;
+    //console.log({bloodReqID});
+    const donorsID = await BloodRequest.findById(bloodReqID).select("PatientIDs -_id");
+    //var donor2 = await Patient.findById(donorsID.PatientIDs[0]);
+    //console.log(donor2);
+    var donors = [];
+    for (var i = 0; i < donorsID.PatientIDs.length; i++) {
+      var donor = await Patient.findById(donorsID.PatientIDs[i]).select("name phoneNumber -_id");
+      donors.push(donor);
+    }
+    //console.log(donors);
+    res.status(200).send(donors);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+}
 
 // module.exports.Logout = async (req, res) => {
 // }
