@@ -131,7 +131,9 @@ module.exports.patientLogin = async (req, res) => {
           patient.unbanIn.toLocaleString()
       );
     }
-    await Patient.findByIdAndUpdate(patient._id, {fcmToken: req.body.fcmToken});
+    await Patient.findByIdAndUpdate(patient._id, {
+      fcmToken: req.body.fcmToken,
+    });
     const token = createToken(patient.id);
     if (!patient.verified) {
       sendOtp(patient.id, patient.name, patient.email);
@@ -147,7 +149,9 @@ module.exports.patientLogin = async (req, res) => {
 module.exports.patientLogout = async (req, res) => {
   const patientID = req.patient;
   try {
-    const patient = await Patient.findByIdAndUpdate(patientID, {fcmToken: ""});
+    const patient = await Patient.findByIdAndUpdate(patientID, {
+      fcmToken: "",
+    });
     res.status(200).send("Logged Out");
   } catch (err) {
     res.status(400).send(err.message);
@@ -659,23 +663,31 @@ module.exports.getNotification = async (req, res) => {
 };
 
 module.exports.getBloodRequests = async (req, res) => {
+  const patientId = req.patient;
   const { skipNumber } = req.params;
   const limitSize = 4;
   try {
-    const bloodRequests = await BloodRequests.find()
+    const bloodRequests = await BloodRequests.find({ isVisible: true })
       .sort({ date: -1, _id: 1 })
       .skip(skipNumber)
       .limit(limitSize);
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
+      console.log("blood req patient id for loop",patientId);
       var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
       var date = new Date(bloodRequests[i].date);
+      var accepted = false;
+      if (bloodRequests[i].PatientIDs.includes(patientId)) {
+        accepted = true;
+      }
+
       var req = {
         id: bloodRequests[i]._id,
         hospital_Name: hospital.name,
         bloodType: bloodRequests[i].bloodType,
         quantity: bloodRequests[i].quantity,
         date: date,
+        accepted: accepted,
       };
       requests.push(req);
     }
@@ -697,9 +709,39 @@ module.exports.isBloodReqUpdated = async (req, res) => {
   }
 };
 
-//TODO:
+//TODO: add id of patient who accepted to patientIDs list in Blood Request DB + add blood request to blood request ids in patient DB +
 module.exports.acceptBloodRequest = async (req, res) => {
-  console.log("blood request");
+  const { requestID } = req.params;
+  console.log("blood req id", requestID);
+  try {
+    const session = await conn.startSession();
+    await session.withTransaction(async () => {
+      console.log("blood req patient id", req.patient);
+
+      await BloodRequests.findByIdAndUpdate(
+        requestID,
+        {
+          $push: {
+            PatientIDs: req.patient,
+          },
+        },
+        { session }
+      );
+      await Patient.findByIdAndUpdate(
+        req.patient,
+        {
+          $push: {
+            bloodRequests: requestID,
+          },
+        },
+        { session }
+      );
+    });
+    session.endSession();
+    res.status(200).send();
+  } catch (error) {
+    res.status(400).send();
+  }
 };
 
 //Get Report
@@ -937,15 +979,15 @@ module.exports.getDoctorDetails = async (req, res) => {
     for (var i = 0; i < schedule.length; i++) {
       console.log(schedule[i].date.toLocaleDateString());
       // if (
-      //   currentTime < schedule[i].to 
+      //   currentTime < schedule[i].to
       //   // && currentDate.toDateString() < schedule[i].date.toDateString()
       // ) {
-        scheduleDetails.push({
-          date: schedule[i].date,
-          from: schedule[i].from,
-          to: schedule[i].to,
-          displayDate: schedule[i].date.toDateString(),
-        });
+      scheduleDetails.push({
+        date: schedule[i].date,
+        from: schedule[i].from,
+        to: schedule[i].to,
+        displayDate: schedule[i].date.toDateString(),
+      });
       //   console.log(
       //     "not yet",
       //     currentTime,
