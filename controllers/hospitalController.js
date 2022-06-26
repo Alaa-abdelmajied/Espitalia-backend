@@ -3,20 +3,66 @@ const _ = require('lodash');
 const { Doctor, Schedule } = require('../models/Doctor');
 const Receptionist = require('../models/Receptionist');
 const Specialization = require('../models/Specialization');
+const WaitingVerfication = require("../models/WaitingVerfication");
 const ObjectId = require("mongodb").ObjectId;
 
 const jsonwebtoken = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const date = require('date-and-time');
 const nodemailer = require("nodemailer");
+const otpGenerator = require("otp-generator");
 const conn = require("../db");
+
+
+const createToken = (id) => {
+    return jwt.sign({ _id:id }, "PrivateKey");
+};
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
         user: "espitalia.app.gp",
-        pass: "Espitalia@app.com",
+        pass: "ovxfmxqneryirltk",
     },
 });
+
+const sendOtp = async (hospitalId, hospitalName, email) => {
+    const otp = otpGenerator.generate(5, {
+        digits: true,
+        upperCaseAlphabets: false,
+        lowerCaseAlphabets: false,
+        specialChars: false,
+    });
+    const account = await WaitingVerfication.findOne({ user: hospitalId });
+    console;
+    if (account) {
+        await WaitingVerfication.updateOne(account, {
+            otp: otp,
+        });
+    } else {
+        await WaitingVerfication.create({
+            user: hospitalId,
+            otp: otp,
+        });
+    }
+    const confirmationMail = {
+        from: "espitalia.app.gp@gmail.com",
+        to: email,
+        subject: "Forgot Password",
+        html:
+            hospitalName +
+            ",<br/><br/> Please enter this code in the application: <br/>" +
+            otp +
+            "<br/><br/>Thanks and regards , <br/>      Espitalia",
+    };
+    transporter.sendMail(confirmationMail, function (error, info) {
+        if (error) {
+            console.log("Email" + error);
+        } else {
+            console.log("Email sent: " + info.response);
+        }
+    });
+};
 
 
 /*
@@ -32,6 +78,73 @@ module.exports.Login = async (req, res) => {
         res.status(400).send(e.message);
     }
 }
+
+module.exports.verifyAccount = async (req, res) => {
+    const { otp } = req.body;
+    try {
+        const waitingVerfication = await WaitingVerfication.findOne({
+            user: req.hospital._id,
+        });
+        if (otp == waitingVerfication.otp) {
+            await WaitingVerfication.deleteOne({ user: req.hospital._id });
+            res.status(200).send("Verified");
+        } else {
+            res.status(400).send("Wrong Otp");
+        }
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
+
+module.exports.resendOtp = async (req, res) => {
+    try {
+        const { name, email } = await Hospital.findById(req.hospital._id);
+        sendOtp(req.hospital._id, name, email);
+        res.status(200).send();
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
+
+module.exports.changePassword = async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+    try {
+        const result = await Hospital.changePassword(
+            req.hospital._id,
+            oldPassword,
+            newPassword
+        );
+        res.status(200).send(result);
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
+
+module.exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    try {
+        const hospital = await Hospital.findOne({ email });
+        if (hospital) {
+            sendOtp(hospital.id, hospital.name, hospital.email);
+            const token = createToken(hospital.id);
+            res.status(201).send({ token });
+        } else {
+            res.status(404).send("This email does not exist");
+        }
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
+
+module.exports.forgotPasswordChange = async (req, res) => {
+    const { newPassword } = req.body;
+    try {
+        const result = await Hospital.forgotPassword(req.hospital._id, newPassword);
+        res.status(200).send(result);
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
 
 /*
 TODO:
@@ -499,7 +612,7 @@ module.exports.hospitalSearchDoctor = async (req, res) => {
 
 }
 
-module.exports.hospitalSearchReceptionist = async(req,res)=>{
+module.exports.hospitalSearchReceptionist = async (req, res) => {
     const search = req.params.search;
     const hospitalID = req.hospital._id;
     try {
@@ -514,13 +627,13 @@ module.exports.hospitalSearchReceptionist = async(req,res)=>{
 
 }
 
-module.exports.getProfile = async (req,res)=>{
-    try{
-        const hospitalData= await Hospital.findById(req.hospital._id);
+module.exports.getProfile = async (req, res) => {
+    try {
+        const hospitalData = await Hospital.findById(req.hospital._id);
         res.status(200).send(hospitalData);
-  
+
     }
-    catch(error){
+    catch (error) {
         res.status(404).send('data not found');
     }
-  }
+}

@@ -49,7 +49,7 @@ const hospitalSchema = new mongoose.Schema({
     }]
 });
 
-hospitalSchema.methods.generateAuthToken = function() {
+hospitalSchema.methods.generateAuthToken = function () {
     /*
     FIXME:
         the private key should be an environment variable
@@ -58,7 +58,7 @@ hospitalSchema.methods.generateAuthToken = function() {
     return token;
 }
 
-hospitalSchema.methods.decodeToken = function(token) {
+hospitalSchema.methods.decodeToken = function (token) {
     const decodedToken = jsonwebtoken.verify(token, "PrivateKey");
     return decodedToken;
 }
@@ -83,8 +83,8 @@ hospitalSchema.statics.hospitalLogin = async function (email, password) {
     throw Error('Incorrect email or password');
 };
 
-hospitalSchema.statics.changePassword = async function (email, oldPassword, newPassword) {
-    const hospital = await this.findOne({ email });
+hospitalSchema.statics.changePassword = async function (hospitalId, oldPassword, newPassword) {
+    const hospital = await this.findOne({ _id: hospitalId });
     const validPassword = await bcrypt.compare(oldPassword, hospital.password);
     if (validPassword) {
         const salt = await bcrypt.genSalt();
@@ -97,6 +97,16 @@ hospitalSchema.statics.changePassword = async function (email, oldPassword, newP
     throw Error('Incorrect password');
 }
 
+hospitalSchema.statics.forgotPassword = async function (hospitalId, newpassword) {
+    const hospital = await this.findOne({ _id: hospitalId });
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newpassword, salt);
+    await Hospital.updateOne(hospital, {
+        password: hashedPassword,
+    });
+    return "done";
+};
+
 const Hospital = mongoose.model('hospital', hospitalSchema);
 
 function validateHospital(hospital) {
@@ -106,7 +116,7 @@ function validateHospital(hospital) {
         password: Joi.string().min(8).max(250).password().require(),
         address: Joi.string().min(3).max(255).require(),
     };
-    return Joi.validate(hospital,schema);
+    return Joi.validate(hospital, schema);
 }
 
 module.exports = Hospital;

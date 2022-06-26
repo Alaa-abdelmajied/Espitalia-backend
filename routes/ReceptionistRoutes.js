@@ -7,6 +7,15 @@ const router = Router();
 
 //POST
 router.post("/login", receptionistController.Login);
+router.post("/verify", auth, receptionistController.verifyAccount);
+router.post("/resendOTP", auth, receptionistController.resendOtp);
+router.post("/changePassword", auth, receptionistController.changePassword);
+router.post("/forgotPassword", receptionistController.forgotPassword);
+router.post(
+  "/forgotPasswordChange",
+  auth,
+  receptionistController.forgotPasswordChange
+);
 router.post("/CreateBloodRequest", auth, receptionistController.CreateBloodRequest);
 //router.post("/EditReservation", receptionistController.EditReservation);
 router.post("/book", auth, receptionistController.book);

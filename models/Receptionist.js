@@ -101,5 +101,29 @@ receptionistSchema.statics.receptionistLogin = async function (email, password) 
     throw Error('Incorrect email or password');
 }
 
+receptionistSchema.statics.changePassword = async function (receptionistId, oldPassword, newPassword) {
+    const receptionist = await this.findOne({ _id: receptionistId });
+    const validPassword = await bcrypt.compare(oldPassword, receptionist.password);
+    if (validPassword) {
+        const salt = await bcrypt.genSalt();
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        await Receptionist.updateOne(receptionist, {
+            password: hashedPassword
+        });
+        return ('done');
+    }
+    throw Error('Incorrect password');
+}
+
+receptionistSchema.statics.forgotPassword = async function (receptionistId, newpassword) {
+    const receptionist = await this.findOne({ _id: receptionistId });
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newpassword, salt);
+    await Receptionist.updateOne(receptionist, {
+        password: hashedPassword,
+    });
+    return "done";
+};
+
 const Receptionist = mongoose.model('receptionist', receptionistSchema);
 module.exports = Receptionist;

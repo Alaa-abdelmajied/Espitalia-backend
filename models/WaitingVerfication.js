@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const waitingVerficationSchema = new mongoose.Schema({
-    patient: {
+    user: {
         type: mongoose.Types.ObjectId,
         required: true,
         unique: true

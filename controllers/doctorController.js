@@ -2,8 +2,11 @@ const Patient = require("../models/Patient");
 const { Doctor, Schedule } = require("../models/Doctor");
 const Hospital = require("../models/Hospital");
 const Appointment = require("../models/Appointment");
+const WaitingVerfication = require("../models/WaitingVerfication");
 const conn = require("../db");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const otpGenerator = require("otp-generator");
 
 require("dotenv").config();
 
@@ -14,6 +17,52 @@ const createToken = (id) => {
 // const decodeToken = (token) => {
 //   return jwt.verify(token, "PrivateKey").id;
 // };
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "espitalia.app.gp",
+    pass: "ovxfmxqneryirltk",
+  },
+});
+
+const sendOtp = async (drId, drName, email) => {
+  const otp = otpGenerator.generate(5, {
+    digits: true,
+    upperCaseAlphabets: false,
+    lowerCaseAlphabets: false,
+    specialChars: false,
+  });
+  const account = await WaitingVerfication.findOne({ user: drId });
+  console;
+  if (account) {
+    await WaitingVerfication.updateOne(account, {
+      otp: otp,
+    });
+  } else {
+    await WaitingVerfication.create({
+      user: drId,
+      otp: otp,
+    });
+  }
+  const confirmationMail = {
+    from: "espitalia.app.gp@gmail.com",
+    to: email,
+    subject: "Forgot Password",
+    html:
+      "Dr " +
+      drName +
+      ",<br/><br/> Please enter this code in the application: <br/>" +
+      otp +
+      "<br/><br/>Thanks and regards , <br/>      Espitalia",
+  };
+  transporter.sendMail(confirmationMail, function (error, info) {
+    if (error) {
+      console.log("Email" + error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+};
 
 module.exports.Login = async (req, res) => {
   const { email, password } = req.body;
@@ -24,6 +73,73 @@ module.exports.Login = async (req, res) => {
     res.status(200).header("x-auth-token", token).send(doctor);
   } catch (e) {
     res.status(400).send(e.message);
+  }
+};
+
+module.exports.verifyAccount = async (req, res) => {
+  const { otp } = req.body;
+  try {
+    const waitingVerfication = await WaitingVerfication.findOne({
+      user: req.doctor,
+    });
+    if (otp == waitingVerfication.otp) {
+      await WaitingVerfication.deleteOne({ user: req.doctor });
+      res.status(200).send("Verified");
+    } else {
+      res.status(400).send("Wrong Otp");
+    }
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.resendOtp = async (req, res) => {
+  try {
+    const { name, email } = await Doctor.findById(req.doctor);
+    sendOtp(req.doctor, name, email);
+    res.status(200).send();
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  try {
+    const result = await Doctor.changePassword(
+      req.doctor,
+      oldPassword,
+      newPassword
+    );
+    res.status(200).send(result);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const dr = await Doctor.findOne({ email });
+    if (dr) {
+      sendOtp(dr.id, dr.name, dr.email);
+      const token = createToken(dr.id);
+      res.status(201).send({ token });
+    } else {
+      res.status(404).send("This email does not exist");
+    }
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+module.exports.forgotPasswordChange = async (req, res) => {
+  const { newPassword } = req.body;
+  try {
+    const result = await Doctor.forgotPassword(req.doctor, newPassword);
+    res.status(200).send(result);
+  } catch (err) {
+    res.status(400).send(err.message);
   }
 };
 
