@@ -156,7 +156,7 @@ module.exports.CreateBloodRequest = async (req, res) => {
   var hospital = await Hospital.findOne({ _id: hospitalID }).select("name -_id");
   console.log(hospital.name);
   const tokens = await Patient.find().select("fcmToken -_id");
-  console.log(tokens);
+  // console.log(tokens);
   var request;
   try {
     request = await BloodRequest.create({
@@ -179,7 +179,10 @@ module.exports.CreateBloodRequest = async (req, res) => {
 const sendNotification = async (tokens, hospital, bloodType) => {
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i].fcmToken;
-    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+    if (token === undefined || token === '')
+      continue;
+    console.log({token});
+    var response = await fetch('https://fcm.googleapis.com/fcm/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
