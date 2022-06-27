@@ -167,6 +167,7 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
   var currentDayAppointments = [];
   try {
     const { schedule } = await Doctor.findById(req.doctor);
+    console.log("sch",schedule);
     for (var i = 0; i < schedule.length; i++) {
       console.log(schedule[i].date);
       if (schedule[i].date.toDateString() === new Date().toDateString()) {
@@ -175,16 +176,20 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
         if (schedule[i].AppointmentList.length > 0) {
           for (var j = 0; j < schedule[i].AppointmentList.length; j++) {
             console.log(schedule[i].AppointmentList[j]);
-            const { patient } = await Appointment.findById(
+            const { patient, entered } = await Appointment.findById(
               schedule[i].AppointmentList[j]
             );
+            console.log(entered);
             const { name } = await Patient.findById(patient);
             patients.push({
               patientID: patient,
               appointmentID: schedule[i].AppointmentList[j],
               patientName: name,
-              scheduleID: schedule[i]._id
+              scheduleID: schedule[i]._id,
+              entered: entered,
             });
+            console.log("patient==>",patients[j],"end");
+
           }
         }
         currentDayAppointments.push({
@@ -283,7 +288,7 @@ module.exports.patientEntered = async (req, res) => {
     for (var i = 0; i < schedule.length; i++) {
       if (schedule[i]._id == scheduleId) {
         if (schedule[i].entered) {
-          throw new Error('still ongoing')
+          throw new Error("still ongoing");
         } else {
           schedule[i].entered = true;
         }
@@ -291,19 +296,16 @@ module.exports.patientEntered = async (req, res) => {
       }
     }
     console.log(schedule);
-    await Doctor.findByIdAndUpdate(
-      req.doctor,
-      {
-        $set: {
-          schedule: schedule,
-        },
-      }
-    );
+    await Doctor.findByIdAndUpdate(req.doctor, {
+      $set: {
+        schedule: schedule,
+      },
+    });
     res.status(200).send();
   } catch (err) {
     res.status(400).send(err.message);
   }
-}
+};
 
 module.exports.endAppointment = async (req, res) => {
   const { appointmentId, patientId, scheduleId } = req.body;
@@ -321,7 +323,7 @@ module.exports.endAppointment = async (req, res) => {
           if (schedule[i].entered) {
             schedule[i].entered = false;
           } else {
-            throw new Error('no ongoing');
+            throw new Error("no ongoing");
           }
           var index = schedule[i].AppointmentList.indexOf(appointmentId);
           schedule[i].AppointmentList.splice(index, 1);
@@ -387,7 +389,7 @@ module.exports.patientDidNotShow = async (req, res) => {
           patientId,
           {
             unVisits: 0,
-            unbanIn: banTime
+            unbanIn: banTime,
           },
           { session }
         );
@@ -396,7 +398,7 @@ module.exports.patientDidNotShow = async (req, res) => {
         await Patient.findByIdAndUpdate(
           patientId,
           {
-            unVisits: patient.unVisits + 1
+            unVisits: patient.unVisits + 1,
           },
           { session }
         );
