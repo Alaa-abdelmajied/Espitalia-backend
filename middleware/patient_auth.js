@@ -6,7 +6,7 @@ module.exports = function validateToken(req, res, next) {
     try{
         const decoded = jsonwebtoken.verify(token, process.env.Token_Secret).id;
         req.patient = decoded;
-        console.log(req.patient)
+        // console.log(req.patient)
         next();
     }catch(error) {
         res.status(400).send(`Invalid token`);

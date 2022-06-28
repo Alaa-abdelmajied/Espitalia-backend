@@ -20,6 +20,7 @@ router.post(
 );
 router.post("/rateAndReview", auth, patientController.rateAndReview);
 router.post("/book", auth, patientController.bookAppointment);
+router.post("/accept/:requestID", auth, patientController.acceptBloodRequest);
 
 //GET Routes
 router.get("/searchDoctors/:search", patientController.patientSearchDoctor);
@@ -65,7 +66,7 @@ router.get(
 );
 router.get("/getPatient", auth, patientController.getPatientProfile);
 router.get("/getNotification", auth, patientController.getNotification);
-router.get("/getBloodRequests/:skipNumber", patientController.getBloodRequests);
+router.get("/getBloodRequests/:skipNumber",auth, patientController.getBloodRequests);
 router.get("/isBloodReqUpdated/:date", patientController.isBloodReqUpdated);
 router.get("/currentFlowNumber/:id", patientController.getFlowOfEntrance);
 
