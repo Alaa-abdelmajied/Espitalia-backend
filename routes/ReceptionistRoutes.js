@@ -32,7 +32,8 @@ router.get("/getBloodRequests", auth, receptionistController.getBloodRequests);
 router.get("/getOldBloodRequests", auth, receptionistController.getOldBloodRequests);
 router.get("/GetNotifications", auth, receptionistController.GetNotifications);
 //router.get("/ReviewReservation", receptionistController.ReviewReservation);
-//router.get("/CancelReservation", receptionistController.CancelReservation);
+// router.get("/viewDonors/:id", receptionistController.viewDonors);
+router.get("/viewDonors/:id", auth,receptionistController.viewDonors);
 router.get("/searchSpecializations/:search", auth, receptionistController.searchSpecializations);
 
 

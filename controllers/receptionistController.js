@@ -156,7 +156,7 @@ module.exports.CreateBloodRequest = async (req, res) => {
   var hospital = await Hospital.findOne({ _id: hospitalID }).select("name -_id");
   console.log(hospital.name);
   const tokens = await Patient.find().select("fcmToken -_id");
-  console.log(tokens);
+  // console.log(tokens);
   var request;
   try {
     request = await BloodRequest.create({
@@ -179,7 +179,10 @@ module.exports.CreateBloodRequest = async (req, res) => {
 const sendNotification = async (tokens, hospital, bloodType) => {
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i].fcmToken;
-    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+    if (token === undefined || token === '')
+      continue;
+    console.log({token});
+    var response = await fetch('https://fcm.googleapis.com/fcm/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -552,6 +555,24 @@ module.exports.getMyData = async (req, res) => {
   }
   catch (error) {
     res.status(404).send('not found');
+  }
+}
+module.exports.viewDonors = async (req, res) => {
+  try {
+    const bloodReqID = req.params.id;
+    //console.log({bloodReqID});
+    const donorsID = await BloodRequest.findById(bloodReqID).select("PatientIDs -_id");
+    //var donor2 = await Patient.findById(donorsID.PatientIDs[0]);
+    //console.log(donor2);
+    var donors = [];
+    for (var i = 0; i < donorsID.PatientIDs.length; i++) {
+      var donor = await Patient.findById(donorsID.PatientIDs[i]).select("name phoneNumber -_id");
+      donors.push(donor);
+    }
+    //console.log(donors);
+    res.status(200).send(donors);
+  } catch (error) {
+    res.status(400).send(error);
   }
 }
 
