@@ -198,6 +198,9 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
           patients,
         });
       }
+      currentDayAppointments.sort(function (a, b) {
+        return (a.from - b.from)&&(a.to-b.to);
+      });
     }
     if (currentDayAppointments.length === 0)
       return res.status(404).send("No Appointments today :)");
@@ -231,9 +234,13 @@ module.exports.getUpcomingAppointments = async (req, res) => {
           date: appointmentDate,
           from: schedule[i].from,
           to: schedule[i].to,
+          dateToSort: schedule[i].date,
           patients,
         });
       }
+      upcomingAppointments.sort(function (a, b) {
+        return a.dateToSort - b.dateToSort;
+      });
     }
 
     if (upcomingAppointments.length === 0)
