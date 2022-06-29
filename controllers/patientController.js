@@ -60,6 +60,7 @@ const sendOtp = async (patientId, patientName, email) => {
       otp +
       "<br/><br/>Thanks and regards , <br/>      Espitalia",
   };
+
   transporter.sendMail(confirmationMail, function (error, info) {
     if (error) {
       console.log("Email" + error);
@@ -168,12 +169,9 @@ module.exports.verifyAccount = async (req, res) => {
     // console.log(waitingVerfication,forgot);
     if (otp == waitingVerfication.otp) {
       if (!forgot) {
-        await Patient.findByIdAndUpdate(
-          waitingVerfication.user ,
-          {
-            verified: true,
-          }
-        ).then(() => console.log("success"));
+        await Patient.findByIdAndUpdate(waitingVerfication.user, {
+          verified: true,
+        }).then(() => console.log("success"));
       }
       await WaitingVerfication.deleteOne({ user: req.patient });
       res.status(200).send("Verified");
@@ -955,6 +953,7 @@ module.exports.getDoctorDetails = async (req, res) => {
         (reviews[i].date.getMonth() + 1) +
         "-" +
         reviews[i].date.getFullYear();
+      // console.log(fullDate);
       reviewDetails.push({
         name: reviews[i].name,
         review: reviews[i].review,
@@ -964,40 +963,15 @@ module.exports.getDoctorDetails = async (req, res) => {
     }
 
     const currentDate = new Date();
-
-    // if(currentDate > scheduleDate){
-    //   console.log('akbar');
-    // }else{
-    //   console.log('asghar')
-    // }
-    // console.log(scheduleDate);
-    // console.log(scheduleDate);
-    // const currentTime = currentDate.toLocaleTimeString("en-GB").substring(0, 5);
-    // console.log(
-    //   "new date",
-    //   "hours==>",
-    //   currentDate.toLocaleTimeString("en-GB").substring(0, 5),
-    //   currentTime,
-    //   currentDate.toLocaleDateString()
-    // );
-    // const s = "01:00";
-    // if (s > currentDate.toLocaleTimeString()) {
-    //   console.log("akbar");
-    // } else {
-    //   console.log("asghar");
-    // }
     for (var i = 0; i < schedule.length; i++) {
-      const scheduleDate = schedule[i].date;
+      const scheduleDate = new Date(schedule[i].date);
+
       scheduleDate.setHours(
         schedule[i].to.substring(0, 2),
         schedule[i].to.substring(3, 5)
       );
-      console.log(schedule[i].date.toLocaleDateString());
+
       if (currentDate < scheduleDate) {
-        // if (
-        //   currentTime < schedule[i].to
-        //   // && currentDate.toDateString() < schedule[i].date.toDateString()
-        // ) {
         scheduleDetails.push({
           date: schedule[i].date,
           from: schedule[i].from,
@@ -1005,22 +979,6 @@ module.exports.getDoctorDetails = async (req, res) => {
           displayDate: schedule[i].date.toDateString(),
         });
       }
-      //   console.log(
-      //     "not yet",
-      //     currentTime,
-      //     schedule[i].to,
-      //     currentDate,
-      //     schedule[i].date.toLocaleDateString()()
-      //   );
-      // } else {
-      //   console.log(
-      //     "passed",
-      //     currentTime,
-      //     schedule[i].to,
-      //     currentDate,
-      //     schedule[i].date.toLocaleDateString()()
-      //   );
-      // }
     }
     res.status(200).send({ doctorData, reviewDetails, scheduleDetails });
   } catch (err) {
@@ -1034,7 +992,7 @@ module.exports.bookAppointment = async (req, res) => {
   const doctor = await Doctor.findById(drId);
   const hospitalId = doctor.hospitalID;
   const schedule = doctor.schedule;
-  console.log( "here==>",hospitalId, schedule);
+  console.log("here==>", drId, appDate, appFrom, appTo);
 
   let obj = doctor.schedule.find(
     (o) =>
@@ -1043,22 +1001,24 @@ module.exports.bookAppointment = async (req, res) => {
       (Date.parse(o.date) === Date.parse(appDate))
   );
 
-  console.log(obj);
+  console.log("obj aho==>", obj);
 
   const indexOfScehdule = doctor.schedule.indexOf(obj);
+  const reservationNumber = obj.AppointmentList.length + 1;
 
   try {
     const { newAppointments } = await Patient.findById(req.patient);
+    console.log(newAppointments);
     for (var i = 0; i < newAppointments.length; i++) {
       console.log("im here");
       const { doctor, date, from } = await Appointment.findById(
         newAppointments[i]._id
       );
-      console.log(
-        newAppointments[i]._id,
-        new Date(appDate).toDateString(),
-        date.toDateString()
-      );
+      // console.log(
+      //   newAppointments[i]._id,
+      //   new Date(appDate).toDateString(),
+      //   date.toDateString()
+      // );
       if (doctor == drId) {
         throw new Error(
           "You already have an upcoming appointment with the same doctor"
@@ -1073,7 +1033,6 @@ module.exports.bookAppointment = async (req, res) => {
     }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
-      const reservationNumber = obj.AppointmentList.length + 1;
       const appointment = await Appointment.create(
         [
           {
