@@ -125,14 +125,16 @@ module.exports.patientLogin = async (req, res) => {
     if (patient.unbanIn > Date.now()) {
       throw new Error(
         'Your account "' +
-        email +
-        '" is banned as you did not show up at your' +
-        " reservation time for five times. This ban ends at " +
-        patient.unbanIn.toLocaleString()
+          email +
+          '" is banned as you did not show up at your' +
+          " reservation time for five times. This ban ends at " +
+          patient.unbanIn.toLocaleString()
       );
     }
 
-    await Patient.findByIdAndUpdate(patient._id, { fcmToken: req.body.fcmToken });
+    await Patient.findByIdAndUpdate(patient._id, {
+      fcmToken: req.body.fcmToken,
+    });
     const token = createToken(patient.id);
     if (!patient.verified) {
       sendOtp(patient.id, patient.name, patient.email);
@@ -148,7 +150,9 @@ module.exports.patientLogin = async (req, res) => {
 module.exports.patientLogout = async (req, res) => {
   const patientID = req.patient;
   try {
-    const patient = await Patient.findByIdAndUpdate(patientID, { fcmToken: "" });
+    const patient = await Patient.findByIdAndUpdate(patientID, {
+      fcmToken: "",
+    });
     res.status(200).send("Logged Out");
   } catch (err) {
     res.status(400).send(err.message);
@@ -161,14 +165,15 @@ module.exports.verifyAccount = async (req, res) => {
     const waitingVerfication = await WaitingVerfication.findOne({
       user: req.patient,
     });
+    // console.log(waitingVerfication,forgot);
     if (otp == waitingVerfication.otp) {
       if (!forgot) {
-        await Patient.updateOne(
-          { _id: waitingVerfication.patient },
+        await Patient.findByIdAndUpdate(
+          waitingVerfication.user ,
           {
             verified: true,
           }
-        );
+        ).then(() => console.log("success"));
       }
       await WaitingVerfication.deleteOne({ user: req.patient });
       res.status(200).send("Verified");
@@ -670,7 +675,7 @@ module.exports.getBloodRequests = async (req, res) => {
       .limit(limitSize);
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
-      console.log("blood req patient id for loop",patientId);
+      console.log("blood req patient id for loop", patientId);
       var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
       var date = new Date(bloodRequests[i].date);
       var accepted = false;
@@ -983,11 +988,14 @@ module.exports.getDoctorDetails = async (req, res) => {
     // }
     for (var i = 0; i < schedule.length; i++) {
       const scheduleDate = schedule[i].date;
-      scheduleDate.setHours(schedule[i].to.substring(0, 2), schedule[i].to.substring(3, 5));
+      scheduleDate.setHours(
+        schedule[i].to.substring(0, 2),
+        schedule[i].to.substring(3, 5)
+      );
       console.log(schedule[i].date.toLocaleDateString());
       if (currentDate < scheduleDate) {
         // if (
-        //   currentTime < schedule[i].to 
+        //   currentTime < schedule[i].to
         //   // && currentDate.toDateString() < schedule[i].date.toDateString()
         // ) {
         scheduleDetails.push({
@@ -1026,6 +1034,7 @@ module.exports.bookAppointment = async (req, res) => {
   const doctor = await Doctor.findById(drId);
   const hospitalId = doctor.hospitalID;
   const schedule = doctor.schedule;
+  console.log( "here==>",hospitalId, schedule);
 
   let obj = doctor.schedule.find(
     (o) =>
@@ -1033,6 +1042,8 @@ module.exports.bookAppointment = async (req, res) => {
       (o.from === appFrom) &
       (Date.parse(o.date) === Date.parse(appDate))
   );
+
+  console.log(obj);
 
   const indexOfScehdule = doctor.schedule.indexOf(obj);
 
