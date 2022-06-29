@@ -167,7 +167,7 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
   var currentDayAppointments = [];
   try {
     const { schedule } = await Doctor.findById(req.doctor);
-    console.log("sch",schedule);
+    console.log("sch", schedule);
     for (var i = 0; i < schedule.length; i++) {
       console.log(schedule[i].date);
       if (schedule[i].date.toDateString() === new Date().toDateString()) {
@@ -188,8 +188,7 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
               scheduleID: schedule[i]._id,
               entered: entered,
             });
-            console.log("patient==>",patients[j],"end");
-
+            console.log("patient==>", patients[j], "end");
           }
         }
         currentDayAppointments.push({
@@ -199,7 +198,7 @@ module.exports.getCurrentDayAppointments = async (req, res) => {
         });
       }
       currentDayAppointments.sort(function (a, b) {
-        return (a.from - b.from)&&(a.to-b.to);
+        return a.from - b.from && a.to - b.to;
       });
     }
     if (currentDayAppointments.length === 0)
@@ -256,12 +255,23 @@ module.exports.getPatientHistory = async (req, res) => {
   const { patientId } = req.params;
   try {
     var patientHistory = [];
-    const { oldAppointments } = await Patient.findById(patientId);
+    var patientHealth = [];
+    const {
+      oldAppointments,
+      diabetic,
+      bloodType,
+      bloodPressure,
+      allergic,
+      allergies,
+    } = await Patient.findById(patientId);
     for (var i = 0; i < oldAppointments.length; i++) {
       const { doctor, report, prescription } = await Appointment.findById(
         oldAppointments[i]
       );
       const { name, specialization } = await Doctor.findById(doctor);
+      // patientHistory = {
+
+      // };
       patientHistory.push({
         doctorName: name,
         specialization: specialization,
@@ -269,7 +279,14 @@ module.exports.getPatientHistory = async (req, res) => {
         prescription: prescription,
       });
     }
-    res.status(200).send(patientHistory);
+    patientHealth.push({
+      diabetic: diabetic,
+      bloodType: bloodType,
+      bloodPressure: bloodPressure,
+      allergic: allergic,
+      allergies: allergies,
+    });
+    res.status(200).send({patientHealth, patientHistory});
   } catch (err) {
     res.status(400).send(err.message);
   }
