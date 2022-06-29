@@ -15,7 +15,7 @@ const conn = require("../db");
 
 
 const createToken = (id) => {
-    return jwt.sign({ _id:id }, "PrivateKey");
+    return jwt.sign({ _id: id }, "PrivateKey");
 };
 
 const transporter = nodemailer.createTransport({
@@ -212,7 +212,7 @@ module.exports.addDoctor = async (req, res) => {
         console.log(error.details[0].message);
         return res.status(400).send(error.details[0].message);
     }
-
+    sortSchedule(req.body.workingDays);
     const generatedPassword = genPasword();
     let doctor = await Doctor.findOne({ email: req.body.email });
 
@@ -359,24 +359,45 @@ module.exports.addWorkingDay = async (req, res) => {
     const workingDay = {
         day: day,
         from: from,
-        to: to
+        to: to,
+        _id: ObjectId()
     };
+
+    const workingDays = await Doctor.findById(doctorID).select('workingDays -_id');
+    var newWorkingdays = workingDays.workingDays.concat(workingDay);
+    sortSchedule(newWorkingdays);
     try {
         const doctor = await Doctor.update(
             { _id: doctorID },
             {
-                $push: {
-                    workingDays: workingDay
+                $set: {
+                    workingDays: newWorkingdays
                 }
             }
         );
-
         res.send("added successfully");
     }
     catch (error) {
-        console.log(error);
-        res.status(400).send('error');
+        res.status(400).send(error);
     }
+}
+
+const sortSchedule = (schedule) => {
+    const daysMap = {
+        "Sat": 0,
+        "Sun": 1,
+        "Mon": 2,
+        "Tue": 3,
+        "Wed": 4,
+        "Thu": 5,
+        "Fri": 6,
+    };
+    return schedule.sort((a, b) => {
+        if (daysMap[a.day] == daysMap[b.day]) {
+            return new Date().setHours(a.from.split(":", 1)[0], a.from.split(":", 2)[1]) - new Date().setHours(b.from.split(":", 1)[0], b.from.split(":", 2)[1]);
+        }
+        return daysMap[a.day] - daysMap[b.day];
+    });
 }
 
 /*
@@ -560,26 +581,26 @@ function sendPasswordViaMail(password, empEmail) {
 }
 
 function GenerateSchedule(workingdays) {
-    let counter = 1;
+    let counter = 2;
     let NewSchedule = [];
-    //Sat, Sun, Mon, Tue, Wed, Thu
     let datenow = new Date(Date.now());
-    // console.log('1',datenow);
-    // datenow.setTime(0);
+    console.log({datenow});
     datenow.setHours(0);
     datenow.setMinutes(0);
     datenow.setSeconds(0);
-    // console.log('2',datenow);
+    console.log({datenow});
     let dateItr = date.addDays(datenow, counter);
+    console.log({dateItr});
     let newDateForm = date.format(dateItr, 'ddd, MMM DD YYYY');
     let dayName = newDateForm.split(",");
     var nextDay = dateItr;
-
+    counter=1;
     while (counter < 15) {
+        console.log(dayName[0]);
         for (var i = 0; i < workingdays.length; i++) {
             if (dayName[0] == workingdays[i].day) {
                 addedSchedule = new Schedule({
-                    date: nextDay,   //2022-09-24
+                    date: nextDay,
                     to: workingdays[i].to,
                     from: workingdays[i].from,
                     AppointmentList: [],
