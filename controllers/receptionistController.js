@@ -181,7 +181,7 @@ const sendNotification = async (tokens, hospital, bloodType) => {
     var token = tokens[i].fcmToken;
     if (token === undefined || token === '')
       continue;
-    console.log({token});
+    console.log({ token });
     var response = await fetch('https://fcm.googleapis.com/fcm/send', {
       method: 'POST',
       headers: {
@@ -469,38 +469,45 @@ module.exports.cancelAppointment = async (req, res) => {
         { session }
       );
     });
-    session.endSession();
-    var response = await fetch(`https://fcm.googleapis.com/fcm/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `key=AAAACuOwo1M:APA91bEXOxZzUg_14sDwUZV7oDq3zIs9CqYBhzpclvbdxUldhg7gn4O7dAoZ2lTRYRsfoRaJKD_V0iT0kOdqcxQMWGE6sLEKXAtW1tQ2j-56FV-cLlN2MfmNftTkSWq_smPfYzfRz6qo`
-      },
-      body: JSON.stringify({
-        to: fcmToken,
-        notification: {
-          title: 'Appointment Cancelled',
-          body: 'Your appointment might been cancelled, please check your appointments list',
-          sound: 'default',
-          click_action: 'FCM_PLUGIN_ACTIVITY',
-          icon: 'https://i.ibb.co/Ps2q5mL/ic-launcher.png'
+    session.endSession()
+    .then( async () => {
+      var response = await fetch(`https://fcm.googleapis.com/fcm/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `key=AAAACuOwo1M:APA91bEXOxZzUg_14sDwUZV7oDq3zIs9CqYBhzpclvbdxUldhg7gn4O7dAoZ2lTRYRsfoRaJKD_V0iT0kOdqcxQMWGE6sLEKXAtW1tQ2j-56FV-cLlN2MfmNftTkSWq_smPfYzfRz6qo`
         },
-        data: {
-          message: 'Your appointment has been cancelled, please check your appointments list',
-          title: 'Appointment Cancelled',
-          sound: 'default',
-          click_action: 'FCM_PLUGIN_ACTIVITY',
-          icon: 'https://i.ibb.co/Ps2q5mL/ic-launcher.png'
-        }
-      })
-    }).then((response) => {
-      response.json();
+        body: JSON.stringify({
+          to: fcmToken,
+          notification: {
+            title: 'Appointment Cancelled',
+            body: 'Your appointment might been cancelled, please check your appointments list',
+            sound: 'default',
+            click_action: 'FCM_PLUGIN_ACTIVITY',
+            icon: 'https://i.ibb.co/Ps2q5mL/ic-launcher.png'
+          },
+          data: {
+            message: 'Your appointment has been cancelled, please check your appointments list',
+            title: 'Appointment Cancelled',
+            sound: 'default',
+            click_action: 'FCM_PLUGIN_ACTIVITY',
+            icon: 'https://i.ibb.co/Ps2q5mL/ic-launcher.png'
+          }
+        })
+      }).then((response) => {
+        response.json();
 
-    }).catch(function (error) {
-      console.log(error);
-    });
-    console.log({ response });
-    res.status(200).send("Appointment cancelled successfully");
+      }).catch(function (error) {
+        console.log(error);
+      });
+      console.log({ response });
+      res.status(200).send("Appointment cancelled successfully");
+    })
+      .catch(err => {
+        console.log(err);
+        res.status(400).send("Error cancelling appointment");
+      });
+
   }
   catch (error) {
     res.status(400).send("Error cancelling appointment");

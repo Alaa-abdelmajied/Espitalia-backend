@@ -15,6 +15,7 @@ const conn = require("../db");
 
 const createToken = (id) => {
   return jwt.sign({ _id: id }, "PrivateKey");
+
 };
 
 const transporter = nodemailer.createTransport({
@@ -262,46 +263,83 @@ module.exports.addDoctor = async (req, res) => {
         .status(400)
         .send(`${doctor} is already exists and not available`);
     }
-  } else {
-    doctor = new Doctor(
-      _.pick(req.body, [
-        "name",
-        "userName",
-        "specialization",
-        "email",
-        "workingDays",
-      ])
-    );
-    doctor._id = ObjectId();
-    doctor.hospitalID = req.hospital._id;
-    doctor.password = generatedPassword;
-    doctor.schedule = GenerateSchedule(req.body.workingDays);
-    try {
-      const session = await conn.startSession();
-      await session.withTransaction(async () => {
-        await doctor.save({ session });
-        await Specialization.findOneAndUpdate(
-          { name: doctor.specialization },
-          {
-            $push: {
-              doctorIds: doctor._id,
-            },
-          },
-          { session }
-        );
-        const hospital = await Hospital.findById(req.hospital._id);
-        if (
-          !hospital.specialization.find((spec) => spec == doctor.specialization)
-        ) {
-          await Hospital.findByIdAndUpdate(
-            req.hospital._id,
-            {
-              $push: {
-                specialization: doctor.specialization,
-              },
-            },
-            { session }
-          );
+    sortSchedule(req.body.workingDays);
+    const generatedPassword = genPasword();
+    let doctor = await Doctor.findOne({ email: req.body.email });
+
+    if (doctor) {
+        if (!doctor.isActive) {
+            doctor.isActive = true;
+            doctor.schedule = GenerateSchedule(req.body.workingDays);
+            doctor.hospitalID = req.hospital._id;
+            doctor.password = generatedPassword;
+            doctor.workingDays = req.body.workingDays;
+            doctor.save();
+            try {
+                const session = await conn.startSession();
+                await session.withTransaction(async () => {
+                    await doctor.save({ session });
+                    const hospital = await Hospital.findById(req.hospital._id);
+                    if (!hospital.specialization.find((spec) => (spec == doctor.specialization))) {
+                        await Hospital.findByIdAndUpdate(
+                            req.hospital._id,
+                            {
+                                $push: {
+                                    specialization: doctor.specialization
+                                }
+                            }, { session }
+                        );
+                    }
+                });
+                session.endSession();
+                sendPasswordViaMail(generatedPassword, req.body.email);
+                //console.log({doctor});
+                res.send(`${doctor} is already exists but we added it to your hospital`);
+            }
+            catch (error) {
+                console.log(error);
+                res.status(400).send('add failed');
+            }
+            //res.send(doctor);
+        }
+        else if (doctor.hospital == req.hospital._id) return res.status(400).send(`${doctor.name} is already working in your hospital`);
+        else {
+            return res.status(400).send(`${doctor} is already exists and not available`);
+        }
+    } else {
+        doctor = new Doctor(_.pick(req.body, ['name', 'userName', 'specialization', 'email', 'workingDays']));
+        doctor._id = ObjectId();
+        doctor.hospitalID = req.hospital._id;
+        doctor.password = generatedPassword;
+        doctor.schedule = GenerateSchedule(req.body.workingDays);
+        try {
+            const session = await conn.startSession();
+            await session.withTransaction(async () => {
+                await doctor.save({ session });
+                await Specialization.findOneAndUpdate({ name: doctor.specialization }, {
+                    $push: {
+                        doctorIds: doctor._id
+                    }
+                }, { session });
+                const hospital = await Hospital.findById(req.hospital._id);
+                if (!hospital.specialization.find((spec) => (spec == doctor.specialization))) {
+                    await Hospital.findByIdAndUpdate(
+                        req.hospital._id,
+                        {
+                            $push: {
+                                specialization: doctor.specialization
+                            }
+                        }, { session }
+                    );
+                }
+            });
+            sendPasswordViaMail(generatedPassword, req.body.email);
+            session.endSession();
+            res.send(_.pick(doctor, ['name', 'userName', 'specialization', 'email', 'schedule', 'hospitalID', 'workingDays']));
+        }
+        catch (error) {
+            console.log(error);
+            res.status(400).send('add failed');
         }
       });
       sendPasswordViaMail(generatedPassword, req.body.email);
@@ -390,28 +428,51 @@ module.exports.removeWorkingDay = async (req, res) => {
 };
 
 module.exports.addWorkingDay = async (req, res) => {
-  const { doctorID, day, from, to } = req.body;
-  const workingDay = {
-    day: day,
-    from: from,
-    to: to,
-  };
-  try {
-    const doctor = await Doctor.update(
-      { _id: doctorID },
-      {
-        $push: {
-          workingDays: workingDay,
-        },
-      }
-    );
 
-    res.send("added successfully");
-  } catch (error) {
-    console.log(error);
-    res.status(400).send("error");
-  }
-};
+    const { doctorID, day, from, to } = req.body;
+    const workingDay = {
+        day: day,
+        from: from,
+        to: to,
+        _id: ObjectId()
+    };
+
+    const workingDays = await Doctor.findById(doctorID).select('workingDays -_id');
+    var newWorkingdays = workingDays.workingDays.concat(workingDay);
+    sortSchedule(newWorkingdays);
+    try {
+        const doctor = await Doctor.update(
+            { _id: doctorID },
+            {
+                $set: {
+                    workingDays: newWorkingdays
+                }
+            }
+        );
+        res.send("added successfully");
+    }
+    catch (error) {
+        res.status(400).send(error);
+    }
+}
+
+const sortSchedule = (schedule) => {
+    const daysMap = {
+        "Sat": 0,
+        "Sun": 1,
+        "Mon": 2,
+        "Tue": 3,
+        "Wed": 4,
+        "Thu": 5,
+        "Fri": 6,
+    };
+    return schedule.sort((a, b) => {
+        if (daysMap[a.day] == daysMap[b.day]) {
+            return new Date().setHours(a.from.split(":", 1)[0], a.from.split(":", 2)[1]) - new Date().setHours(b.from.split(":", 1)[0], b.from.split(":", 2)[1]);
+        }
+        return daysMap[a.day] - daysMap[b.day];
+    });
+}
 
 /*
 DONE:
@@ -606,32 +667,39 @@ function sendPasswordViaMail(password, empEmail) {
 }
 
 function GenerateSchedule(workingdays) {
-  let counter = 1;
-  let NewSchedule = [];
-  //Sat, Sun, Mon, Tue, Wed, Thu
-  let datenow = new Date(Date.now());
-  // console.log('1',datenow);
-  // datenow.setTime(0);
-  datenow.setHours(0);
-  datenow.setMinutes(0);
-  datenow.setSeconds(0);
-  // console.log('2',datenow);
-  let dateItr = date.addDays(datenow, counter);
-  let newDateForm = date.format(dateItr, "ddd, MMM DD YYYY");
-  let dayName = newDateForm.split(",");
-  var nextDay = dateItr;
 
-  while (counter < 15) {
-    for (var i = 0; i < workingdays.length; i++) {
-      if (dayName[0] == workingdays[i].day) {
-        addedSchedule = new Schedule({
-          date: nextDay, //2022-09-24
-          to: workingdays[i].to,
-          from: workingdays[i].from,
-          AppointmentList: [],
-        });
-        NewSchedule.push(addedSchedule);
-      }
+    let counter = 2;
+    let NewSchedule = [];
+    let datenow = new Date(Date.now());
+    console.log({datenow});
+    datenow.setHours(0);
+    datenow.setMinutes(0);
+    datenow.setSeconds(0);
+    console.log({datenow});
+    let dateItr = date.addDays(datenow, counter);
+    console.log({dateItr});
+    let newDateForm = date.format(dateItr, 'ddd, MMM DD YYYY');
+    let dayName = newDateForm.split(",");
+    var nextDay = dateItr;
+    counter=1;
+    while (counter < 15) {
+        console.log(dayName[0]);
+        for (var i = 0; i < workingdays.length; i++) {
+            if (dayName[0] == workingdays[i].day) {
+                addedSchedule = new Schedule({
+                    date: nextDay,
+                    to: workingdays[i].to,
+                    from: workingdays[i].from,
+                    AppointmentList: [],
+                });
+                NewSchedule.push(addedSchedule);
+            }
+        }
+        nextDay = date.addDays(dateItr, counter);
+        var nextDayII = date.format(nextDay, 'ddd, MMM DD YYYY');
+        nextDayName = nextDayII.split(",");
+        dayName = nextDayName;
+        counter++;
     }
     nextDay = date.addDays(dateItr, counter);
     var nextDayII = date.format(nextDay, "ddd, MMM DD YYYY");
