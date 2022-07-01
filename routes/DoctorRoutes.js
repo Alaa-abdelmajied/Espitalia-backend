@@ -35,11 +35,6 @@ router.get(
   doctorController.getUpcomingAppointments
 );
 router.get("/doctorProfile", auth, doctorController.getDoctorProfile);
-router.get(
-  "/upcomingAppointments",
-  auth,
-  doctorController.getUpcomingAppointments
-);
 router.get("/getPatientHistory/:patientId", doctorController.getPatientHistory);
 
 module.exports = router;

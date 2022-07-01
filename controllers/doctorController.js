@@ -269,9 +269,6 @@ module.exports.getPatientHistory = async (req, res) => {
         oldAppointments[i]
       );
       const { name, specialization } = await Doctor.findById(doctor);
-      // patientHistory = {
-
-      // };
       patientHistory.push({
         doctorName: name,
         specialization: specialization,
@@ -286,7 +283,7 @@ module.exports.getPatientHistory = async (req, res) => {
       allergic: allergic,
       allergies: allergies,
     });
-    res.status(200).send({patientHealth, patientHistory});
+    res.status(200).send({ patientHealth, patientHistory });
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -356,13 +353,6 @@ module.exports.endAppointment = async (req, res) => {
         break;
       }
     }
-    // for (var i = 0; i < schedule.length; i++) {
-    //   if (schedule[i].AppointmentList.includes(appointmentId)) {
-    //     var index = schedule[i].AppointmentList.indexOf(appointmentId);
-    //     schedule[i].AppointmentList.splice(index, 1);
-    //     break;
-    //   }
-    // }
     const session = await conn.startSession();
     await session.withTransaction(async () => {
       await Patient.findByIdAndUpdate(
@@ -401,6 +391,7 @@ module.exports.patientDidNotShow = async (req, res) => {
       if (schedule[i].AppointmentList.includes(appointmentId)) {
         var index = schedule[i].AppointmentList.indexOf(appointmentId);
         schedule[i].AppointmentList.splice(index, 1);
+        schedule[i].flowNumber = schedule[i].flowNumber + 1;
         break;
       }
     }
@@ -414,6 +405,9 @@ module.exports.patientDidNotShow = async (req, res) => {
           {
             unVisits: 0,
             unbanIn: banTime,
+            $pull: {
+              newAppointments: appointmentId,
+            },
           },
           { session }
         );
@@ -423,6 +417,9 @@ module.exports.patientDidNotShow = async (req, res) => {
           patientId,
           {
             unVisits: patient.unVisits + 1,
+            $pull: {
+              newAppointments: appointmentId,
+            },
           },
           { session }
         );
@@ -436,7 +433,6 @@ module.exports.patientDidNotShow = async (req, res) => {
         },
         { session }
       );
-
       await Appointment.findByIdAndDelete(appointmentId, { session });
     });
     session.endSession();

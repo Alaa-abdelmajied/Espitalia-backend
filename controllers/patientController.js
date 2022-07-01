@@ -69,7 +69,6 @@ const sendOtp = async (patientId, patientName, email) => {
     }
   });
 };
-
 module.exports.resendOtp = async (req, res) => {
   try {
     const { name, email } = await Patient.findById(req.patient);
@@ -684,6 +683,7 @@ module.exports.getBloodRequests = async (req, res) => {
       var req = {
         id: bloodRequests[i]._id,
         hospital_Name: hospital.name,
+        // hospital_Number:hospital.phoneNumber,
         bloodType: bloodRequests[i].bloodType,
         quantity: bloodRequests[i].quantity,
         date: date,
@@ -965,7 +965,7 @@ module.exports.getDoctorDetails = async (req, res) => {
     const currentDate = new Date();
     for (var i = 0; i < schedule.length; i++) {
       const scheduleDate = new Date(schedule[i].date);
-
+      console.log(schedule[i].date, schedule[i].from, schedule[i].to);
       scheduleDate.setHours(
         schedule[i].to.substring(0, 2),
         schedule[i].to.substring(3, 5)
@@ -973,6 +973,7 @@ module.exports.getDoctorDetails = async (req, res) => {
 
       if (currentDate < scheduleDate) {
         scheduleDetails.push({
+          scheduleID: schedule[i]._id,
           date: schedule[i].date,
           from: schedule[i].from,
           to: schedule[i].to,
@@ -988,23 +989,41 @@ module.exports.getDoctorDetails = async (req, res) => {
 
 /*TODO: change name bookAppointment*/
 module.exports.bookAppointment = async (req, res) => {
-  const { drId, appDate, appFrom, appTo } = req.body;
+  const { drId, scheduleID, appDate, appFrom, appTo } = req.body;
   const doctor = await Doctor.findById(drId);
+  // const {schedule} = await Doctor.findById(drId);
+
   const hospitalId = doctor.hospitalID;
-  const schedule = doctor.schedule;
+  // const schedule = doctor.schedule;
   console.log("here==>", drId, appDate, appFrom, appTo);
 
-  let obj = doctor.schedule.find(
-    (o) =>
-      (o.to === appTo) &
-      (o.from === appFrom) &
-      (Date.parse(o.date) === Date.parse(appDate))
-  );
+  // let obj = await doctor.schedule.find(
+  //   (o) =>
+  //     (o.to === appTo) &
+  //     (o.from === appFrom) &
+  //     (Date.parse(o.date) === Date.parse(appDate))
+  // );
 
-  console.log("obj aho==>", obj);
+  // const indexOfScehdule = doctor.schedule.indexOf(obj);
+  var schedule = {};
+  var indexOfScehdule;
+  for (var i = 0; i < doctor.schedule.length; i++) {
+    if (doctor.schedule[i]._id == scheduleID) {
+      schedule = doctor.schedule[i];
+      indexOfScehdule = i;
+      break;
+    }
+  }
 
-  const indexOfScehdule = doctor.schedule.indexOf(obj);
-  const reservationNumber = obj.AppointmentList.length + 1;
+  // let obj = await schedule.find({ to: appTo, from: appFrom, date: appDate });
+
+  console.log(Date.parse(appDate));
+
+  // console.log("obj aho==>", obj);
+
+  // const indexOfScehdule = doctor.schedule.indexOf(schedule);
+  const reservationNumber = schedule.AppointmentList.length + 1;
+  // const reservationNumber = obj.AppointmentList.length + 1;
 
   try {
     const { newAppointments } = await Patient.findById(req.patient);
@@ -1039,7 +1058,7 @@ module.exports.bookAppointment = async (req, res) => {
             _id: ObjectId(),
             patient: req.patient,
             doctor: drId,
-            date: obj.date,
+            date: schedule.date,
             from: appFrom,
             to: appTo,
             flowNumber: reservationNumber,
@@ -1057,14 +1076,15 @@ module.exports.bookAppointment = async (req, res) => {
         },
         { session }
       );
-      obj.AppointmentList.push(appointment[0]._id);
-      schedule[indexOfScehdule] = obj;
+      schedule.AppointmentList.push(appointment[0]._id);
+
+      doctor.schedule[indexOfScehdule] = schedule;
 
       await Doctor.findByIdAndUpdate(
         drId,
         {
           $set: {
-            schedule: schedule,
+            schedule: doctor.schedule,
           },
         },
         { session }
