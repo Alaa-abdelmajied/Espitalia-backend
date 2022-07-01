@@ -66,8 +66,9 @@ router.get(
 );
 router.get("/getPatient", auth, patientController.getPatientProfile);
 router.get("/getNotification", auth, patientController.getNotification);
-router.get("/getBloodRequests/:skipNumber",auth, patientController.getBloodRequests);
+router.get("/getBloodRequests/:skipNumber", auth, patientController.getBloodRequests);
 router.get("/isBloodReqUpdated/:date", patientController.isBloodReqUpdated);
+router.get("/acceptedBloodRequests", auth, patientController.acceptedBloodRequests);
 router.get("/currentFlowNumber/:id", patientController.getFlowOfEntrance);
 
 //DELETE Routes

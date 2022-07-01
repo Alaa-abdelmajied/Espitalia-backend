@@ -125,10 +125,10 @@ module.exports.patientLogin = async (req, res) => {
     if (patient.unbanIn > Date.now()) {
       throw new Error(
         'Your account "' +
-          email +
-          '" is banned as you did not show up at your' +
-          " reservation time for five times. This ban ends at " +
-          patient.unbanIn.toLocaleString()
+        email +
+        '" is banned as you did not show up at your' +
+        " reservation time for five times. This ban ends at " +
+        patient.unbanIn.toLocaleString()
       );
     }
 
@@ -710,6 +710,29 @@ module.exports.isBloodReqUpdated = async (req, res) => {
     res.status(500).send(err.message);
   }
 };
+
+module.exports.acceptedBloodRequests = async (req, res) => {
+  try {
+    const { bloodRequests } = await Patient.findById(req.patient);
+    var requests = [];
+    for (var i = 0; i < bloodRequests.length; i++) {
+      const bloodReq = await BloodRequests.findOne({ _id: bloodRequests[i], isVisible: true });
+      const { name, address } = await Hospital.findById(bloodReq.hospitalID);
+      const req = {
+        hospital_Name: name,
+        hospitalAddress: address,
+        bloodType: bloodReq.bloodType,
+        quantity: bloodReq.quantity,
+        date: new Date(bloodReq.date),
+        accepted: true,
+      };
+      requests.push(req);
+    }
+    res.status(200).send(requests);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+}
 
 //TODO: add id of patient who accepted to patientIDs list in Blood Request DB + add blood request to blood request ids in patient DB +
 module.exports.acceptBloodRequest = async (req, res) => {
