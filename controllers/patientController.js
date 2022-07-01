@@ -673,7 +673,7 @@ module.exports.getBloodRequests = async (req, res) => {
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
       console.log("blood req patient id for loop", patientId);
-      var hospital = await Hospital.findById(bloodRequests[i].hospitalID);
+      var {name,address} = await Hospital.findById(bloodRequests[i].hospitalID);
       var date = new Date(bloodRequests[i].date);
       var accepted = false;
       if (bloodRequests[i].PatientIDs.includes(patientId)) {
@@ -682,8 +682,8 @@ module.exports.getBloodRequests = async (req, res) => {
 
       var req = {
         id: bloodRequests[i]._id,
-        hospital_Name: hospital.name,
-        // hospital_Number:hospital.phoneNumber,
+        hospital_Name: name,
+        hospitalAddress: address,
         bloodType: bloodRequests[i].bloodType,
         quantity: bloodRequests[i].quantity,
         date: date,
