@@ -673,7 +673,9 @@ module.exports.getBloodRequests = async (req, res) => {
     var requests = [];
     for (var i = 0; i < bloodRequests.length; i++) {
       console.log("blood req patient id for loop", patientId);
-      var {name,address} = await Hospital.findById(bloodRequests[i].hospitalID);
+      var { name, address } = await Hospital.findById(
+        bloodRequests[i].hospitalID
+      );
       var date = new Date(bloodRequests[i].date);
       var accepted = false;
       if (bloodRequests[i].PatientIDs.includes(patientId)) {
@@ -987,24 +989,12 @@ module.exports.getDoctorDetails = async (req, res) => {
   }
 };
 
-/*TODO: change name bookAppointment*/
 module.exports.bookAppointment = async (req, res) => {
   const { drId, scheduleID, appDate, appFrom, appTo } = req.body;
   const doctor = await Doctor.findById(drId);
-  // const {schedule} = await Doctor.findById(drId);
-
   const hospitalId = doctor.hospitalID;
-  // const schedule = doctor.schedule;
   console.log("here==>", drId, appDate, appFrom, appTo);
 
-  // let obj = await doctor.schedule.find(
-  //   (o) =>
-  //     (o.to === appTo) &
-  //     (o.from === appFrom) &
-  //     (Date.parse(o.date) === Date.parse(appDate))
-  // );
-
-  // const indexOfScehdule = doctor.schedule.indexOf(obj);
   var schedule = {};
   var indexOfScehdule;
   for (var i = 0; i < doctor.schedule.length; i++) {
@@ -1015,15 +1005,7 @@ module.exports.bookAppointment = async (req, res) => {
     }
   }
 
-  // let obj = await schedule.find({ to: appTo, from: appFrom, date: appDate });
-
-  console.log(Date.parse(appDate));
-
-  // console.log("obj aho==>", obj);
-
-  // const indexOfScehdule = doctor.schedule.indexOf(schedule);
   const reservationNumber = schedule.AppointmentList.length + 1;
-  // const reservationNumber = obj.AppointmentList.length + 1;
 
   try {
     const { newAppointments } = await Patient.findById(req.patient);
@@ -1033,11 +1015,6 @@ module.exports.bookAppointment = async (req, res) => {
       const { doctor, date, from } = await Appointment.findById(
         newAppointments[i]._id
       );
-      // console.log(
-      //   newAppointments[i]._id,
-      //   new Date(appDate).toDateString(),
-      //   date.toDateString()
-      // );
       if (doctor == drId) {
         throw new Error(
           "You already have an upcoming appointment with the same doctor"
