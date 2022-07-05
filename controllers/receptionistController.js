@@ -437,7 +437,7 @@ module.exports.cancelAppointment = async (req, res) => {
     const { patient, doctor } = await Appointment.findById(appointmentID);
     var fcmToken = await Patient.findById(patient).select('fcmToken -_id');
     fcmToken = fcmToken.fcmToken;
-    const { schedule } = await Doctor.findById(doctor);
+    const { schedule, name } = await Doctor.findById(doctor);
     const session = await conn.startSession();
     await session.withTransaction(async () => {
       await Appointment.findByIdAndDelete(appointmentID, { session });
@@ -468,9 +468,26 @@ module.exports.cancelAppointment = async (req, res) => {
         },
         { session }
       );
+      const notification = await Notification.create([{
+        title: 'Appointment Cancelled',
+        body: `Your appointment with Dr.${name} has been cancelled, please check your appointments list`,
+        patient
+      }],
+        { session }
+      );
+      console.log(notification[0]._id, patient);
+      await Patient.findByIdAndUpdate(
+        patient,
+        {
+          $push: {
+            notifications: notification[0]._id,
+          },
+        },
+        { session }
+      );
     });
     session.endSession()
-    .then( async () => {
+    .then(async () => {
       var response = await fetch(`https://fcm.googleapis.com/fcm/send`, {
         method: 'POST',
         headers: {
@@ -481,7 +498,7 @@ module.exports.cancelAppointment = async (req, res) => {
           to: fcmToken,
           notification: {
             title: 'Appointment Cancelled',
-            body: 'Your appointment might been cancelled, please check your appointments list',
+            body: `Your appointment with Dr.${name} has been cancelled, please check your appointments list`,
             sound: 'default',
             click_action: 'FCM_PLUGIN_ACTIVITY',
             icon: 'https://i.ibb.co/Ps2q5mL/ic-launcher.png'
@@ -500,13 +517,13 @@ module.exports.cancelAppointment = async (req, res) => {
       }).catch(function (error) {
         console.log(error);
       });
-      console.log({ response });
-      res.status(200).send("Appointment cancelled successfully");
+    console.log({ response });
+    res.status(200).send("Appointment cancelled successfully");
     })
-      .catch(err => {
-        console.log(err);
-        res.status(400).send("Error cancelling appointment");
-      });
+    .catch(err => {
+      console.log(err);
+      res.status(400).send("Error cancelling appointment");
+    });
 
   }
   catch (error) {

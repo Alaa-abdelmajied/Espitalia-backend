@@ -125,10 +125,10 @@ module.exports.patientLogin = async (req, res) => {
     if (patient.unbanIn > Date.now()) {
       throw new Error(
         'Your account "' +
-          email +
-          '" is banned as you did not show up at your' +
-          " reservation time for five times. This ban ends at " +
-          patient.unbanIn.toLocaleString()
+        email +
+        '" is banned as you did not show up at your' +
+        " reservation time for five times. This ban ends at " +
+        patient.unbanIn.toLocaleString()
       );
     }
 
@@ -653,9 +653,13 @@ module.exports.getPatientProfile = async (req, res) => {
 
 module.exports.getNotification = async (req, res) => {
   try {
-    const notification = await Notifications.find({ userID: req.patient });
-    console.log(notification[0].date.toLocaleString());
-    res.status(200).send(notification);
+    const { notifications } = await Patient.findById(req.patient);
+    var response = [];
+    for (var i = 0; i < notifications.length; i++) {
+      const notification = await Notifications.findById(notifications[i]);
+      response.push(notification);
+    }
+    res.status(200).send(response);
   } catch (err) {
     res.status(400).send(err.message);
   }
